@@ -13,7 +13,7 @@ export function useArcadeTimer() {
   const rafRef = useRef<number>(0);
 
   const loop = useCallback(
-    (timestamp: number) => {
+    function frame(timestamp: number) {
       if (!lastTickRef.current) lastTickRef.current = timestamp;
 
       const elapsed = timestamp - lastTickRef.current;
@@ -22,7 +22,7 @@ export function useArcadeTimer() {
         lastTickRef.current = timestamp - (elapsed % 1000);
       }
 
-      rafRef.current = requestAnimationFrame(loop);
+      rafRef.current = requestAnimationFrame(frame);
     },
     [tickTimer]
   );

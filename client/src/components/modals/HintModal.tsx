@@ -9,7 +9,7 @@ import { getHint } from '@/services/api';
 export function HintModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const challenge = useGameStore((s) => s.challenge);
   const currentHintLevel = useGameStore((s) => s.currentHintLevel);
-  const useHintAction = useGameStore((s) => s.useHint);
+  const triggerUseHint = useGameStore((s) => s.useHint);
   const [hint, setHint] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [penalty, setPenalty] = useState(0);
@@ -23,8 +23,8 @@ export function HintModal({ open, onClose }: { open: boolean; onClose: () => voi
       const result = await getHint(challenge.buggyCode, challenge.description, nextLevel);
       setHint(result.hint);
       setPenalty(result.pointPenalty);
-      useHintAction();
-    } catch (err) {
+      triggerUseHint();
+    } catch {
       setHint('Failed to get hint. Check your connection.');
     } finally {
       setLoading(false);

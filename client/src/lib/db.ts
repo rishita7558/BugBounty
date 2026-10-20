@@ -57,7 +57,8 @@ export async function getTopScores(limit = 10): Promise<HighScore[]> {
 }
 
 export async function saveHighScore(entry: Omit<HighScore, 'id'>): Promise<number> {
-  return db.highScores.add(entry as HighScore);
+  const id = await db.highScores.add(entry as HighScore);
+  return id as number;
 }
 
 export async function getRunHistory(limit = 50): Promise<RunHistory[]> {
@@ -65,7 +66,8 @@ export async function getRunHistory(limit = 50): Promise<RunHistory[]> {
 }
 
 export async function saveRun(entry: Omit<RunHistory, 'id'>): Promise<number> {
-  return db.runHistory.add(entry as RunHistory);
+  const id = await db.runHistory.add(entry as RunHistory);
+  return id as number;
 }
 
 export async function getUnlockedBadges(): Promise<Badge[]> {
@@ -75,5 +77,6 @@ export async function getUnlockedBadges(): Promise<Badge[]> {
 export async function unlockBadge(badge: Omit<Badge, 'id'>): Promise<number> {
   const exists = await db.badges.where('name').equals(badge.name).first();
   if (exists) return exists.id!;
-  return db.badges.add(badge as Badge);
+  const id = await db.badges.add(badge as Badge);
+  return id as number;
 }

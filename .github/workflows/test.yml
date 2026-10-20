@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 22]
 
     steps:
       - uses: actions/checkout@v4
@@ -20,25 +20,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
 
       - name: Install root dependencies
         run: npm ci
 
       - name: Install client dependencies
-        run: cd client && npm ci
+        working-directory: client
+        run: npm ci
 
       - name: Install server dependencies
-        run: cd server && npm ci
+        working-directory: server
+        run: npm ci
 
       - name: Lint client
-        run: cd client && npm run lint
+        working-directory: client
+        run: npm run lint
 
       - name: Lint server
-        run: cd server && npm run lint
+        working-directory: server
+        run: npm run lint
 
       - name: Build client
-        run: cd client && npm run build
+        working-directory: client
+        run: npm run build
 
       - name: Build server
-        run: cd server && npm run build
+        working-directory: server
+        run: npm run build

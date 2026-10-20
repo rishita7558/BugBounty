@@ -11,10 +11,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-      - run: cd client && npm ci
-      - run: cd client && npm run build
+          node-version: 22
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+      - name: Build client
+        working-directory: client
+        run: npm run build
       # Add your deployment step here (Vercel, Cloudflare Pages, etc.)
       # Example for Vercel:
       # - uses: amondnet/vercel-action@v25
@@ -27,8 +30,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-      - run: cd server && npm ci
-      - run: cd server && npm run build
+          node-version: 22
+      - name: Install dependencies
+        working-directory: server
+        run: npm ci
+      - name: Build server
+        working-directory: server
+        run: npm run build
       # Add your deployment step here (Render, Railway, etc.)
