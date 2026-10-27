@@ -61,6 +61,14 @@ export interface GameState {
   difficulty: 'easy' | 'medium' | 'hard';
   soundEnabled: boolean;
 
+  // Phase 2 — UI state
+  /** Toggle diff view: compare buggy vs player code side-by-side */
+  showDiff: boolean;
+  /** CRT scanline + chromatic aberration overlay */
+  crtEnabled: boolean;
+  /** Momentary flag for screen-shake on wrong answer */
+  screenShake: boolean;
+
   // Actions
   setPhase: (phase: GamePhase) => void;
   setChallenge: (challenge: Challenge) => void;
@@ -75,6 +83,10 @@ export interface GameState {
   incrementCombo: () => void;
   setDifficulty: (d: 'easy' | 'medium' | 'hard') => void;
   toggleSound: () => void;
+  // Phase 2 actions
+  toggleDiff: () => void;
+  toggleCRT: () => void;
+  triggerScreenShake: () => void;
   resetGame: () => void;
 }
 
@@ -84,36 +96,40 @@ export interface GameState {
 
 export const useGameStore = create<GameState>()(
   subscribeWithSelector((set, get) => ({
-    // State
-    phase: 'idle',
-    challenge: null,
-    playerCode: '',
-    score: 0,
-    combo: 0,
-    maxCombo: 0,
-    totalSolved: 0,
-    totalAttempts: 0,
-    timeRemaining: 0,
-    timerActive: false,
-    hintsUsed: 0,
+    // ── Initial state ──────────────────────────────────────────────────────
+    phase:            'idle',
+    challenge:        null,
+    playerCode:       '',
+    score:            0,
+    combo:            0,
+    maxCombo:         0,
+    totalSolved:      0,
+    totalAttempts:    0,
+    timeRemaining:    0,
+    timerActive:      false,
+    hintsUsed:        0,
     currentHintLevel: 0,
-    review: null,
-    difficulty: 'medium',
-    soundEnabled: true,
+    review:           null,
+    difficulty:       'medium',
+    soundEnabled:     true,
+    showDiff:         false,
+    crtEnabled:       true,
+    screenShake:      false,
 
-    // Actions
+    // ── Actions ────────────────────────────────────────────────────────────
     setPhase: (phase) => set({ phase }),
 
     setChallenge: (challenge) =>
       set({
         challenge,
-        playerCode: challenge.buggyCode,
-        timeRemaining: challenge.timeLimit,
-        phase: 'playing',
-        timerActive: true,
-        hintsUsed: 0,
+        playerCode:       challenge.buggyCode,
+        timeRemaining:    challenge.timeLimit,
+        phase:            'playing',
+        timerActive:      true,
+        hintsUsed:        0,
         currentHintLevel: 0,
-        review: null,
+        review:           null,
+        showDiff:         false,
       }),
 
     setPlayerCode: (code) => set({ playerCode: code }),
@@ -135,7 +151,7 @@ export const useGameStore = create<GameState>()(
     useHint: () => {
       const { hintsUsed, currentHintLevel } = get();
       set({
-        hintsUsed: hintsUsed + 1,
+        hintsUsed:        hintsUsed + 1,
         currentHintLevel: Math.min(currentHintLevel + 1, 3),
       });
     },
@@ -146,15 +162,15 @@ export const useGameStore = create<GameState>()(
 
       if (review.correct) {
         const { combo, maxCombo, totalSolved, score } = get();
-        const newCombo = combo + 1;
+        const newCombo   = combo + 1;
         const multiplier = 1 + (newCombo - 1) * 0.25;
-        const points = Math.round(review.score * multiplier);
+        const points     = Math.round(review.score * multiplier);
         set({
-          phase: 'victory',
-          combo: newCombo,
-          maxCombo: Math.max(maxCombo, newCombo),
+          phase:       'victory',
+          combo:       newCombo,
+          maxCombo:    Math.max(maxCombo, newCombo),
           totalSolved: totalSolved + 1,
-          score: score + points,
+          score:       score + points,
         });
       } else {
         set({ phase: 'reviewing', combo: 0 });
@@ -167,7 +183,7 @@ export const useGameStore = create<GameState>()(
 
     incrementCombo: () =>
       set((s) => ({
-        combo: s.combo + 1,
+        combo:    s.combo + 1,
         maxCombo: Math.max(s.maxCombo, s.combo + 1),
       })),
 
@@ -175,16 +191,29 @@ export const useGameStore = create<GameState>()(
 
     toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
 
+    toggleDiff: () => set((s) => ({ showDiff: !s.showDiff })),
+
+    toggleCRT: () => set((s) => ({ crtEnabled: !s.crtEnabled })),
+
+    /** Pulse screenShake true for 500 ms then reset — triggers CSS animation */
+    triggerScreenShake: () => {
+      set({ screenShake: true });
+      setTimeout(() => set({ screenShake: false }), 500);
+    },
+
     resetGame: () =>
       set({
-        phase: 'idle',
-        challenge: null,
-        playerCode: '',
-        timeRemaining: 0,
-        timerActive: false,
-        hintsUsed: 0,
+        phase:            'idle',
+        challenge:        null,
+        playerCode:       '',
+        timeRemaining:    0,
+        timerActive:      false,
+        hintsUsed:        0,
         currentHintLevel: 0,
-        review: null,
+        review:           null,
+        showDiff:         false,
+        screenShake:      false,
+        // soundEnabled & crtEnabled are user prefs — intentionally preserved
       }),
   }))
 );

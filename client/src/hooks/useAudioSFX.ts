@@ -6,7 +6,7 @@ import { useGameStore } from '@/store/useGameStore';
 // No pre-recorded files needed. Generates retro arcade sounds on the fly.
 // ---------------------------------------------------------------------------
 
-type SoundType = 'correct' | 'wrong' | 'combo' | 'tick' | 'hint' | 'gameover' | 'start' | 'click';
+type SoundType = 'correct' | 'wrong' | 'combo' | 'tick' | 'hint' | 'gameover' | 'start' | 'click' | 'keypress';
 
 export function useAudioSFX() {
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -14,109 +14,100 @@ export function useAudioSFX() {
 
   const getCtx = useCallback(() => {
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new AudioContext();
+      const AudioCtxClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioCtxRef.current = new AudioCtxClass();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
     }
     return audioCtxRef.current;
   }, []);
+
+  const playTone = useCallback((freq: number, type: OscillatorType, duration: number, startDelay = 0, gainLevel = 0.15) => {
+    if (!soundEnabled) return;
+    const ctx = getCtx();
+    const startTime = ctx.currentTime + startDelay;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(gainLevel, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  }, [soundEnabled, getCtx]);
+
+  const playKeyClick = useCallback(() => {
+    playTone(800, 'triangle', 0.04, 0, 0.06);
+  }, [playTone]);
+
+  const playSuccess = useCallback(() => {
+    // Celebratory arpeggio: C5 (523.25), E5 (659.25), G5 (783.99)
+    playTone(523.25, 'sine', 0.1, 0, 0.15);
+    playTone(659.25, 'sine', 0.1, 0.1, 0.15);
+    playTone(783.99, 'sine', 0.25, 0.2, 0.15);
+  }, [playTone]);
+
+  const playFailure = useCallback(() => {
+    // Descending buzzer on test failure
+    playTone(180, 'sawtooth', 0.2, 0, 0.14);
+    playTone(140, 'sawtooth', 0.3, 0.15, 0.14);
+  }, [playTone]);
 
   const play = useCallback(
     (type: SoundType) => {
       if (!soundEnabled) return;
 
-      const ctx = getCtx();
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
       switch (type) {
         case 'correct':
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(523, now);       // C5
-          osc.frequency.setValueAtTime(659, now + 0.1); // E5
-          osc.frequency.setValueAtTime(784, now + 0.2); // G5
-          gain.gain.setValueAtTime(0.15, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-          osc.start(now);
-          osc.stop(now + 0.4);
+          playSuccess();
           break;
 
         case 'wrong':
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(200, now);
-          osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-          osc.start(now);
-          osc.stop(now + 0.3);
+          playFailure();
+          break;
+
+        case 'keypress':
+        case 'click':
+          playKeyClick();
           break;
 
         case 'combo':
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(880, now);        // A5
-          osc.frequency.setValueAtTime(1047, now + 0.08); // C6
-          osc.frequency.setValueAtTime(1319, now + 0.16); // E6
-          osc.frequency.setValueAtTime(1568, now + 0.24); // G6
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-          osc.start(now);
-          osc.stop(now + 0.4);
+          playTone(880, 'square', 0.1, 0, 0.12);
+          playTone(1047, 'square', 0.1, 0.08, 0.12);
+          playTone(1319, 'square', 0.1, 0.16, 0.12);
+          playTone(1568, 'square', 0.25, 0.24, 0.12);
           break;
 
         case 'tick':
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(1000, now);
-          gain.gain.setValueAtTime(0.05, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-          osc.start(now);
-          osc.stop(now + 0.05);
+          playTone(1000, 'sine', 0.04, 0, 0.05);
           break;
 
         case 'hint':
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(440, now);
-          osc.frequency.setValueAtTime(550, now + 0.15);
-          gain.gain.setValueAtTime(0.1, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-          osc.start(now);
-          osc.stop(now + 0.3);
+          playTone(440, 'triangle', 0.15, 0, 0.1);
+          playTone(550, 'triangle', 0.2, 0.15, 0.1);
           break;
 
         case 'gameover':
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(440, now);
-          osc.frequency.exponentialRampToValueAtTime(55, now + 1);
-          gain.gain.setValueAtTime(0.15, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 1);
-          osc.start(now);
-          osc.stop(now + 1);
+          playTone(440, 'sawtooth', 0.4, 0, 0.15);
+          playTone(110, 'sawtooth', 0.6, 0.3, 0.15);
           break;
 
         case 'start':
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(262, now);
-          osc.frequency.setValueAtTime(330, now + 0.1);
-          osc.frequency.setValueAtTime(392, now + 0.2);
-          osc.frequency.setValueAtTime(523, now + 0.3);
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-          osc.start(now);
-          osc.stop(now + 0.5);
-          break;
-
-        case 'click':
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(800, now);
-          gain.gain.setValueAtTime(0.08, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-          osc.start(now);
-          osc.stop(now + 0.03);
+          playTone(262, 'square', 0.1, 0, 0.12);
+          playTone(330, 'square', 0.1, 0.1, 0.12);
+          playTone(392, 'square', 0.1, 0.2, 0.12);
+          playTone(523, 'square', 0.25, 0.3, 0.12);
           break;
       }
     },
-    [soundEnabled, getCtx]
+    [soundEnabled, playSuccess, playFailure, playKeyClick, playTone]
   );
 
-  return { play };
+  return { play, playTone, playKeyClick, playSuccess, playFailure };
 }
