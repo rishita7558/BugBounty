@@ -1,13 +1,22 @@
+import { useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
+import { resetPlayerStreak } from '@/lib/db';
 
 // ---------------------------------------------------------------------------
 // Defeat Modal — Shown when the timer runs out
+// Resets local player streak in Dexie.js persistence engine.
 // ---------------------------------------------------------------------------
 
 export function DefeatModal() {
   const phase = useGameStore((s) => s.phase);
   const challenge = useGameStore((s) => s.challenge);
   const resetGame = useGameStore((s) => s.resetGame);
+
+  useEffect(() => {
+    if (phase === 'defeat') {
+      resetPlayerStreak().catch((err) => console.error('Failed to reset streak in Dexie:', err));
+    }
+  }, [phase]);
 
   if (phase !== 'defeat' || !challenge) return null;
 

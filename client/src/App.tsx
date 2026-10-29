@@ -5,48 +5,98 @@ import { useAudioSFX } from '@/hooks/useAudioSFX';
 import { useCodeRunner } from '@/hooks/useCodeRunner';
 import { generateChallenge, reviewCode } from '@/services/api';
 import { CodeEditor } from '@/components/editor/CodeEditor';
-import { ArcadeHUD } from '@/components/arcade/ArcadeHUD';
+import { ArcadeHUD } from './components/arcade/ArcadeHUD';
 import { Scoreboard } from '@/components/arcade/Scoreboard';
 import { VictoryModal } from '@/components/modals/VictoryModal';
 import { DefeatModal } from '@/components/modals/DefeatModal';
 import { HintModal } from '@/components/modals/HintModal';
-import { Zap, Bug, Play, Send, Lightbulb, Volume2, VolumeX, RotateCcw, Terminal, Tv2 } from 'lucide-react';
+import { PlayerProfileModal } from '@/components/modals/PlayerProfileModal';
+import { decodeChallengeFromUrl, encodeChallengeToUrl, type ShareableChallengePayload } from '@/lib/lzShare';
+import { getPlayerProfile } from '@/lib/db';
+import {
+  Zap,
+  Bug,
+  Play,
+  Send,
+  Lightbulb,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  Terminal,
+  Tv2,
+  Share2,
+  User,
+  Check,
+} from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // App — CodeDuel: BugBounty Arena
+// Features: Dexie.js Persistence, Serverless LZ-String State Sharing,
+// Monaco Diff Editor, Procedural Audio, and Minimal Node.js LLM Proxy.
 // ---------------------------------------------------------------------------
 
 function App() {
   useArcadeTimer();
-  const { play }              = useAudioSFX();
+  const { play } = useAudioSFX();
   const { runCode, isRunning } = useCodeRunner();
 
   // ── Store reads ──────────────────────────────────────────────────────────
-  const phase          = useGameStore((s) => s.phase);
-  const challenge      = useGameStore((s) => s.challenge);
-  const playerCode     = useGameStore((s) => s.playerCode);
-  const difficulty     = useGameStore((s) => s.difficulty);
-  const soundEnabled   = useGameStore((s) => s.soundEnabled);
-  const showDiff       = useGameStore((s) => s.showDiff);
-  const crtEnabled     = useGameStore((s) => s.crtEnabled);
-  const screenShake    = useGameStore((s) => s.screenShake);
+  const phase = useGameStore((s) => s.phase);
+  const challenge = useGameStore((s) => s.challenge);
+  const playerCode = useGameStore((s) => s.playerCode);
+  const difficulty = useGameStore((s) => s.difficulty);
+  const soundEnabled = useGameStore((s) => s.soundEnabled);
+  const showDiff = useGameStore((s) => s.showDiff);
+  const crtEnabled = useGameStore((s) => s.crtEnabled);
+  const screenShake = useGameStore((s) => s.screenShake);
 
   // ── Store actions ────────────────────────────────────────────────────────
-  const setChallenge       = useGameStore((s) => s.setChallenge);
-  const setPhase           = useGameStore((s) => s.setPhase);
-  const submitReview       = useGameStore((s) => s.submitReview);
-  const setDifficulty      = useGameStore((s) => s.setDifficulty);
-  const toggleSound        = useGameStore((s) => s.toggleSound);
-  const toggleDiff         = useGameStore((s) => s.toggleDiff);
-  const toggleCRT          = useGameStore((s) => s.toggleCRT);
+  const setChallenge = useGameStore((s) => s.setChallenge);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const submitReview = useGameStore((s) => s.submitReview);
+  const setDifficulty = useGameStore((s) => s.setDifficulty);
+  const toggleSound = useGameStore((s) => s.toggleSound);
+  const toggleDiff = useGameStore((s) => s.toggleDiff);
+  const toggleCRT = useGameStore((s) => s.toggleCRT);
   const triggerScreenShake = useGameStore((s) => s.triggerScreenShake);
-  const resetGame          = useGameStore((s) => s.resetGame);
+  const resetGame = useGameStore((s) => s.resetGame);
 
   // ── Local state ──────────────────────────────────────────────────────────
-  const [loading,       setLoading]       = useState(false);
-  const [hintOpen,      setHintOpen]      = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hintOpen, setHintOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState('');
-  const [submitting,    setSubmitting]    = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [shareToast, setShareToast] = useState<string | null>(null);
+
+  // ── Serverless State Sharing (Check URL Hash on Mount) ────────────────────
+  useEffect(() => {
+    const shared = decodeChallengeFromUrl();
+    if (shared && shared.code) {
+      console.log('[lzShare] Loaded shared challenge from URL hash:', shared.title);
+      setChallenge({
+        id: 'shared-' + Math.random().toString(36).substring(2, 8),
+        title: shared.title || 'Shared Bug Challenge',
+        description:
+          shared.description ||
+          `Shared challenge crafted by ${shared.author || 'Anonymous Hacker'}. Inspect and squash the bug!`,
+        difficulty: shared.difficulty || 'medium',
+        category: 'shared',
+        buggyCode: shared.code,
+        correctCode: '',
+        bugLine: shared.bugLine || 1,
+        bugDescription: 'Find and fix the intentional issue in this shared code.',
+        hints: shared.hints || ['Examine code flow, variable scoping, and edge cases.'],
+        testCases: (shared.tests || []).map((t) => ({
+          input: typeof t.input === 'string' ? t.input : JSON.stringify(t.input),
+          expectedOutput: typeof t.expected === 'string' ? t.expected : JSON.stringify(t.expected),
+        })),
+        timeLimit: 120,
+        points: 250,
+      });
+      setPhase('playing');
+    }
+  }, [setChallenge, setPhase]);
 
   // ── Apply / remove CRT class on body ────────────────────────────────────
   useEffect(() => {
@@ -82,6 +132,37 @@ function App() {
     setConsoleOutput(output);
   }, [playerCode, runCode, play]);
 
+  // ── Share Challenge via URL Compression ─────────────────────────────────
+  const handleShareChallenge = useCallback(async () => {
+    if (!challenge) return;
+    play('click');
+    const profile = await getPlayerProfile();
+    const payload: ShareableChallengePayload = {
+      title: challenge.title,
+      code: playerCode,
+      difficulty: challenge.difficulty,
+      description: challenge.description,
+      bugLine: challenge.bugLine,
+      hints: challenge.hints,
+      tests: challenge.testCases.map((tc) => ({
+        input: [tc.input],
+        expected: tc.expectedOutput,
+      })),
+      author: profile.callsign,
+    };
+
+    const shareUrl = encodeChallengeToUrl(payload);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      }
+      setShareToast('Challenge URL copied to clipboard! (100% Serverless via LZ-String)');
+      setTimeout(() => setShareToast(null), 3500);
+    } catch {
+      window.prompt('Copy shareable challenge link:', shareUrl);
+    }
+  }, [challenge, playerCode, play]);
+
   // ── Submit Fix (button OR Ctrl+Enter from editor) ─────────────────────
   const handleSubmit = useCallback(async () => {
     if (!challenge) return;
@@ -113,13 +194,13 @@ function App() {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header
         style={{
-          padding:        '16px 24px',
-          display:        'flex',
-          alignItems:     'center',
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom:   '1px solid var(--border-subtle)',
-          flexWrap:       'wrap',
-          gap:            '12px',
+          borderBottom: '1px solid var(--border-subtle)',
+          flexWrap: 'wrap',
+          gap: '12px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -127,20 +208,47 @@ function App() {
           <h1 className="arcade-text neon-text" style={{ fontSize: '0.75rem', margin: 0 }}>
             CodeDuel
           </h1>
-          <span style={{ fontSize: '0.6rem', color: 'var(--neon-magenta)', fontFamily: 'var(--font-arcade)', opacity: 0.7 }}>
+          <span
+            style={{
+              fontSize: '0.6rem',
+              color: 'var(--neon-magenta)',
+              fontFamily: 'var(--font-arcade)',
+              opacity: 0.7,
+            }}
+          >
             BugBounty Arena
           </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Profile / Persistence Modal */}
+          <button
+            className="btn-neon"
+            onClick={() => {
+              setProfileOpen(true);
+              play('click');
+            }}
+            style={{ padding: '8px 12px', fontSize: '0.75rem' }}
+            title="View Player Profile & IndexedDB Stats"
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <User size={14} /> Profile
+            </span>
+          </button>
+
           {/* CRT FX toggle */}
           <button
             className="btn-neon"
-            onClick={() => { toggleCRT(); play('click'); }}
+            onClick={() => {
+              toggleCRT();
+              play('click');
+            }}
             style={{ padding: '8px', opacity: crtEnabled ? 1 : 0.45 }}
             title={crtEnabled ? 'Disable CRT FX' : 'Enable CRT FX'}
           >
-            <span><Tv2 size={16} /></span>
+            <span>
+              <Tv2 size={16} />
+            </span>
           </button>
 
           {/* Sound toggle */}
@@ -155,9 +263,33 @@ function App() {
         </div>
       </header>
 
+      {/* Share Notification Toast */}
+      {shareToast && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '70px',
+            right: '24px',
+            zIndex: 999,
+            background: 'rgba(0, 240, 255, 0.95)',
+            color: '#05050d',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            boxShadow: '0 0 25px rgba(0, 240, 255, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontFamily: 'var(--font-mono)',
+          }}
+        >
+          <Check size={16} /> {shareToast}
+        </div>
+      )}
+
       {/* ── Main Content ────────────────────────────────────────────────── */}
       <main style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
         {/* Scoreboard */}
         <Scoreboard />
 
@@ -166,9 +298,14 @@ function App() {
           <div
             className="glass-card"
             style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: '24px', padding: '60px 40px', textAlign: 'center',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '24px',
+              padding: '60px 40px',
+              textAlign: 'center',
             }}
           >
             <div className="animate-float">
@@ -180,8 +317,8 @@ function App() {
                 Ready to Hunt Bugs?
               </h2>
               <p style={{ color: 'var(--text-secondary)', maxWidth: '500px' }}>
-                Find and fix bugs in dynamically generated code challenges.
-                Score points, build combos, and climb the leaderboard — all powered by AI.
+                Find and fix bugs in dynamically generated code challenges. Score points, build combos, and climb the
+                leaderboard — all persisted locally in IndexedDB.
               </p>
             </div>
 
@@ -192,12 +329,17 @@ function App() {
                   key={d}
                   className={`badge badge-${d}`}
                   style={{
-                    cursor: 'pointer', padding: '8px 16px', fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    padding: '8px 16px',
+                    fontSize: '0.75rem',
                     border: difficulty === d ? '2px solid currentColor' : '1px solid transparent',
                     transform: difficulty === d ? 'scale(1.1)' : 'scale(1)',
                     transition: 'all 0.2s var(--ease-spring)',
                   }}
-                  onClick={() => { setDifficulty(d); play('click'); }}
+                  onClick={() => {
+                    setDifficulty(d);
+                    play('click');
+                  }}
                 >
                   {d.toUpperCase()}
                 </button>
@@ -222,15 +364,28 @@ function App() {
           <>
             {/* Challenge info + Arcade HUD row */}
             <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch', flexWrap: 'wrap' }}>
-
               {/* Challenge card */}
               <div className="glass-card" style={{ flex: 1, padding: '20px', minWidth: '300px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                   <span className={`badge badge-${challenge.difficulty}`}>{challenge.difficulty}</span>
-                  <span className="badge" style={{ background: 'rgba(0,240,255,0.1)', color: 'var(--neon-cyan)', border: '1px solid rgba(0,240,255,0.2)' }}>
+                  <span
+                    className="badge"
+                    style={{
+                      background: 'rgba(0,240,255,0.1)',
+                      color: 'var(--neon-cyan)',
+                      border: '1px solid rgba(0,240,255,0.2)',
+                    }}
+                  >
                     {challenge.category}
                   </span>
-                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--neon-yellow)' }}>
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.75rem',
+                      color: 'var(--neon-yellow)',
+                    }}
+                  >
                     +{challenge.points} pts
                   </span>
                 </div>
@@ -238,12 +393,56 @@ function App() {
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.5 }}>
                   {challenge.description}
                 </p>
-                {/* Ctrl+Enter hint */}
-                <div style={{ marginTop: '10px', fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  <span style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)', borderRadius: '4px', padding: '1px 6px', color: 'var(--neon-cyan)', marginRight: '4px' }}>
-                    Ctrl+Enter
-                  </span>
-                  to submit instantly from the editor
+
+                {/* Shortcuts & Serverless Sharing */}
+                <div
+                  style={{
+                    marginTop: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-muted)',
+                    fontFamily: 'var(--font-mono)',
+                  }}
+                >
+                  <div>
+                    <span
+                      style={{
+                        background: 'rgba(0,229,255,0.1)',
+                        border: '1px solid rgba(0,229,255,0.3)',
+                        borderRadius: '4px',
+                        padding: '1px 6px',
+                        color: 'var(--neon-cyan)',
+                        marginRight: '4px',
+                      }}
+                    >
+                      Ctrl+Enter
+                    </span>
+                    to submit fix instantly
+                  </div>
+
+                  {/* Share button */}
+                  <button
+                    onClick={handleShareChallenge}
+                    style={{
+                      background: 'rgba(0, 240, 255, 0.1)',
+                      border: '1px solid var(--neon-cyan)',
+                      color: 'var(--neon-cyan)',
+                      borderRadius: '4px',
+                      padding: '4px 10px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '0.7rem',
+                    }}
+                    title="Copy 100% serverless URL link to this challenge"
+                  >
+                    <Share2 size={12} /> Share URL
+                  </button>
                 </div>
               </div>
 
@@ -254,9 +453,12 @@ function App() {
             {/* Editor + Console grid */}
             <div
               style={{
-                display: 'grid', gridTemplateColumns: '1fr',
-                gridTemplateRows: '1fr auto', gap: '16px',
-                flex: 1, minHeight: '450px',
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gridTemplateRows: '1fr auto',
+                gap: '16px',
+                flex: 1,
+                minHeight: '450px',
               }}
             >
               {/* Monaco editor with diff mode + Ctrl+Enter */}
@@ -268,23 +470,47 @@ function App() {
               />
 
               {/* Console output */}
-              <div className="glass-card" style={{ padding: '16px', minHeight: '100px', maxHeight: '200px', overflow: 'auto' }}>
+              <div
+                className="glass-card"
+                style={{ padding: '16px', minHeight: '100px', maxHeight: '200px', overflow: 'auto' }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                   <Terminal size={14} color="var(--neon-green)" />
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      color: 'var(--text-secondary)',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                    }}
+                  >
                     Console
                   </span>
                   {isRunning && (
-                    <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--neon-yellow)', fontFamily: 'var(--font-mono)' }}>
+                    <span
+                      style={{
+                        marginLeft: 'auto',
+                        fontSize: '0.65rem',
+                        color: 'var(--neon-yellow)',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
                       ⏳ running…
                     </span>
                   )}
                 </div>
                 <pre
                   style={{
-                    fontFamily: 'var(--font-mono)', fontSize: '0.8rem',
-                    color: consoleOutput.startsWith('✅') ? 'var(--neon-green)' : consoleOutput.startsWith('❌') ? 'var(--neon-red)' : 'var(--text-primary)',
-                    whiteSpace: 'pre-wrap', margin: 0,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.8rem',
+                    color: consoleOutput.startsWith('✅')
+                      ? 'var(--neon-green)'
+                      : consoleOutput.startsWith('❌')
+                      ? 'var(--neon-red)'
+                      : 'var(--text-primary)',
+                    whiteSpace: 'pre-wrap',
+                    margin: 0,
                   }}
                 >
                   {consoleOutput || '// Run your code to see output...'}
@@ -294,14 +520,32 @@ function App() {
 
             {/* Action buttons */}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button className="btn-neon" onClick={() => { setHintOpen(true); play('hint'); }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Lightbulb size={16} /> Hint</span>
+              <button
+                className="btn-neon"
+                onClick={() => {
+                  setHintOpen(true);
+                  play('hint');
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Lightbulb size={16} /> Hint
+                </span>
               </button>
               <button className="btn-neon" onClick={handleRunCode} disabled={isRunning}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Play size={16} /> Run</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Play size={16} /> Run
+                </span>
               </button>
-              <button className="btn-neon" onClick={() => { resetGame(); play('click'); }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><RotateCcw size={16} /> Reset</span>
+              <button
+                className="btn-neon"
+                onClick={() => {
+                  resetGame();
+                  play('click');
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <RotateCcw size={16} /> Reset
+                </span>
               </button>
               <button
                 className="btn-neon btn-neon-green"
@@ -321,18 +565,23 @@ function App() {
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer
         style={{
-          padding: '12px 24px', borderTop: '1px solid var(--border-subtle)',
-          display: 'flex', justifyContent: 'center',
-          fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)',
+          padding: '12px 24px',
+          borderTop: '1px solid var(--border-subtle)',
+          display: 'flex',
+          justifyContent: 'center',
+          fontSize: '0.7rem',
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono)',
         }}
       >
-        CodeDuel: BugBounty Arena — 100% Client-Side Evaluation
+        CodeDuel: BugBounty Arena — Zero-Database Dexie Persistence • LZ-String URL Sharing • Minimal Node.js Proxy
       </footer>
 
       {/* ── Modals ──────────────────────────────────────────────────────── */}
       <VictoryModal />
       <DefeatModal />
       <HintModal open={hintOpen} onClose={() => setHintOpen(false)} />
+      <PlayerProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

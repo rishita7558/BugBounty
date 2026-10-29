@@ -6,7 +6,7 @@ import { formatTime } from '@/lib/utils';
 // Spec: radial ring pulses red when < 30s remain; combos show x2/x3/x5 label
 // ---------------------------------------------------------------------------
 
-const RADIUS       = 54;
+const RADIUS = 54;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS; // ≈ 339.3
 
 function getMultiplierLabel(combo: number): string | null {
@@ -18,14 +18,14 @@ function getMultiplierLabel(combo: number): string | null {
 
 export function ArcadeHUD() {
   const timeRemaining = useGameStore((s) => s.timeRemaining);
-  const timerActive   = useGameStore((s) => s.timerActive);
-  const challenge     = useGameStore((s) => s.challenge);
-  const combo         = useGameStore((s) => s.combo);
+  const timerActive = useGameStore((s) => s.timerActive);
+  const challenge = useGameStore((s) => s.challenge);
+  const combo = useGameStore((s) => s.combo);
 
   const totalTime = challenge?.timeLimit ?? 120;
-  const progress  = totalTime > 0 ? Math.max(0, timeRemaining / totalTime) : 0;
+  const progress = totalTime > 0 ? Math.max(0, timeRemaining / totalTime) : 0;
 
-  const isWarning  = timeRemaining <= 30 && timeRemaining > 0;
+  const isWarning = timeRemaining <= 30 && timeRemaining > 0;
   const isCritical = timeRemaining <= 10 && timeRemaining > 0;
 
   // SVG ring offset — shrinks clockwise as time drains
@@ -33,7 +33,7 @@ export function ArcadeHUD() {
 
   // Ring colour transitions: cyan → gold → red
   const ringColour = isCritical ? '#FF0055' : isWarning ? '#FFE600' : '#00E5FF';
-  const ringGlow   = isCritical
+  const ringGlow = isCritical
     ? 'drop-shadow(0 0 8px rgba(255,0,85,0.95))'
     : isWarning
     ? 'drop-shadow(0 0 7px rgba(255,230,0,0.85))'
@@ -44,18 +44,17 @@ export function ArcadeHUD() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-
       {/* ── Bomb Countdown Ring ─────────────────────────────────────────── */}
       <div
         className="glass-card crt-overlay"
         style={{
-          padding:        '16px',
-          display:        'flex',
-          flexDirection:  'column',
-          alignItems:     'center',
-          gap:            '6px',
-          minWidth:       '168px',
-          position:       'relative',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '6px',
+          minWidth: '168px',
+          position: 'relative',
         }}
       >
         <span
@@ -75,14 +74,18 @@ export function ArcadeHUD() {
           >
             {/* Background track */}
             <circle
-              cx="64" cy="64" r={RADIUS}
+              cx="64"
+              cy="64"
+              r={RADIUS}
               fill="none"
               stroke="rgba(255,255,255,0.07)"
               strokeWidth="8"
             />
             {/* Animated progress ring */}
             <circle
-              cx="64" cy="64" r={RADIUS}
+              cx="64"
+              cy="64"
+              r={RADIUS}
               fill="none"
               stroke={ringColour}
               strokeWidth="8"
@@ -91,7 +94,7 @@ export function ArcadeHUD() {
               strokeDashoffset={strokeDashoffset}
               style={{
                 transition: 'stroke-dashoffset 0.95s linear, stroke 0.4s ease',
-                filter:     ringGlow,
+                filter: ringGlow,
               }}
             />
           </svg>
@@ -99,20 +102,20 @@ export function ArcadeHUD() {
           {/* Center time display */}
           <div
             style={{
-              position:       'absolute',
-              inset:          0,
-              display:        'flex',
-              flexDirection:  'column',
-              alignItems:     'center',
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
               justifyContent: 'center',
-              gap:            '2px',
+              gap: '2px',
             }}
           >
             <span
               className={`arcade-text${isCritical ? ' animate-timer-warning' : ''}`}
               style={{
-                fontSize:   '1.25rem',
-                color:      ringColour,
+                fontSize: '1.25rem',
+                color: ringColour,
                 textShadow: isCritical
                   ? '0 0 20px rgba(255,0,85,0.95)'
                   : isWarning
@@ -127,8 +130,8 @@ export function ArcadeHUD() {
             {!timerActive && timeRemaining > 0 && (
               <span
                 style={{
-                  fontSize:   '0.48rem',
-                  color:      '#FFE600',
+                  fontSize: '0.48rem',
+                  color: '#FFE600',
                   fontFamily: 'var(--font-mono)',
                 }}
               >
@@ -143,12 +146,12 @@ export function ArcadeHUD() {
           <div
             className="animate-pulse-glow"
             style={{
-              position:     'absolute',
-              inset:        '-2px',
+              position: 'absolute',
+              inset: '-2px',
               borderRadius: 'var(--radius-lg)',
-              border:       `2px solid ${ringColour}`,
-              opacity:      0.75,
-              pointerEvents:'none',
+              border: `2px solid ${ringColour}`,
+              opacity: 0.75,
+              pointerEvents: 'none',
             }}
           />
         )}
@@ -159,18 +162,18 @@ export function ArcadeHUD() {
         <div
           className="glass-card animate-score-pop"
           style={{
-            padding:   '12px 20px',
+            padding: '12px 20px',
             textAlign: 'center',
-            minWidth:  '168px',
+            minWidth: '168px',
           }}
         >
           <span
             className="arcade-text"
             style={{
-              fontSize:    '0.45rem',
-              color:       'var(--text-secondary)',
+              fontSize: '0.45rem',
+              color: 'var(--text-secondary)',
               letterSpacing: '2px',
-              display:     'block',
+              display: 'block',
               marginBottom: '4px',
             }}
           >
@@ -187,11 +190,11 @@ export function ArcadeHUD() {
             <span
               className="arcade-text"
               style={{
-                fontSize:   '0.52rem',
-                color:      '#FFE600',
+                fontSize: '0.52rem',
+                color: '#FFE600',
                 textShadow: '0 0 10px rgba(255,230,0,0.75)',
-                display:    'block',
-                marginTop:  '3px',
+                display: 'block',
+                marginTop: '3px',
               }}
             >
               {multiplierLabel} MULTIPLIER
@@ -202,10 +205,10 @@ export function ArcadeHUD() {
           {multiplierFloat && (
             <span
               style={{
-                fontSize:   '0.65rem',
-                color:      'var(--text-secondary)',
+                fontSize: '0.65rem',
+                color: 'var(--text-secondary)',
                 fontFamily: 'var(--font-mono)',
-                display:    'block',
+                display: 'block',
               }}
             >
               ×{multiplierFloat}

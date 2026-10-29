@@ -1,23 +1,38 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { errorHandler } from './middleware/errorHandler.js';
 import { llmRateLimiter, generalRateLimiter } from './middleware/rateLimiter.js';
 import { generateChallenge, reviewCode } from './controllers/challenge.controller.js';
 import { getHint } from './controllers/hint.controller.js';
 
 // ---------------------------------------------------------------------------
-// Express App — Minimal LLM security proxy & CORS gateway.
-// Zero database. Zero session storage. ~100 LOC.
+// Express App — Minimal Node.js LLM Security Proxy & CORS Gateway.
+// Zero database dependencies. Zero session storage. ~100 LOC.
 // ---------------------------------------------------------------------------
 
 const app = express();
 
-// ── Global Middleware ──────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173')
+// ── Security & Global Middleware ───────────────────────────────────────────
+app.use(helmet());
+
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://localhost:4173')
   .split(',')
   .map((o) => o.trim());
 
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or dev proxy)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: '100kb' }));
 
 // ── Health Check ──────────────────────────────────────────────────────────
