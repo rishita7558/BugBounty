@@ -1,6 +1,8 @@
 // client/src/components/modals/DefeatModal.tsx
+import { useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { RotateCcw, AlertOctagon, ChevronRight } from 'lucide-react';
+import { resetPlayerStreak } from '@/lib/db';
 
 interface DefeatModalProps {
   onNextChallenge?: () => void;
@@ -11,6 +13,12 @@ export function DefeatModal({ onNextChallenge }: DefeatModalProps) {
   const challenge = useGameStore((s) => s.challenge);
   const timeRemaining = useGameStore((s) => s.timeRemaining);
   const resetGame = useGameStore((s) => s.resetGame);
+
+  useEffect(() => {
+    if (phase === 'defeat') {
+      resetPlayerStreak().catch((err) => console.error('Failed to reset streak in Dexie:', err));
+    }
+  }, [phase]);
 
   if (phase !== 'defeat' || !challenge) return null;
 

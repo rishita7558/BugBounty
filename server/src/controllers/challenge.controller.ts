@@ -39,7 +39,18 @@ export async function generateChallenge(req: Request, res: Response, next: NextF
 Make the bug realistic but findable. The code should be 10-40 lines long.
 The challenge should be fun and educational.`;
 
-    const challenge = await queryLLM(CHALLENGE_SYSTEM_PROMPT, userPrompt);
+    const challenge: any = await queryLLM(CHALLENGE_SYSTEM_PROMPT, userPrompt);
+    
+    // Normalize time limits and arcade points so players have sufficient time
+    const defaultTimeLimits: Record<string, number> = { easy: 120, medium: 150, hard: 180 };
+    if (!challenge.timeLimit || challenge.timeLimit < 60) {
+      challenge.timeLimit = defaultTimeLimits[difficulty.toLowerCase()] || 120;
+    }
+    if (!challenge.points) {
+      challenge.points = difficulty === 'hard' ? 500 : difficulty === 'medium' ? 250 : 100;
+    }
+    challenge.difficulty = difficulty.toLowerCase();
+
     res.json({ success: true, challenge });
   } catch (err) {
     next(err);

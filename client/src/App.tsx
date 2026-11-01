@@ -5,12 +5,19 @@ import { useAudioSFX } from '@/hooks/useAudioSFX';
 import { useCodeRunner } from '@/hooks/useCodeRunner';
 import { generateChallenge, reviewCode } from '@/services/api';
 import { CodeEditor } from '@/components/editor/CodeEditor';
-import { ArcadeHUD } from '@/components/arcade/ArcadeHUD';
+import { ArcadeHUD } from './components/arcade/ArcadeHUD';
 import { Scoreboard } from '@/components/arcade/Scoreboard';
 import { VictoryModal } from '@/components/modals/VictoryModal';
 import { DefeatModal } from '@/components/modals/DefeatModal';
 import { HintModal } from '@/components/modals/HintModal';
 import { SurrenderModal } from '@/components/modals/SurrenderModal';
+import { PlayerProfileModal } from '@/components/modals/PlayerProfileModal';
+import {
+  decodeChallengeFromUrl,
+  encodeChallengeToUrl,
+  type ShareableChallengePayload,
+} from '@/lib/lzShare';
+import { getPlayerProfile } from '@/lib/db';
 import { GameActionMachine } from '@/core/state/GameActionMachine';
 import { HintStateMachine } from '@/core/state/HintStateMachine';
 import {
@@ -27,10 +34,15 @@ import {
   Flag,
   AlertCircle,
   X,
+  Share2,
+  User,
+  Check,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// App — CodeDuel: BugBounty Arena (OOP Refactored Engine)
+// App — CodeDuel: BugBounty Arena (OOP Scoring Engine & Arcade Architecture)
+// Features: Dexie.js Persistence, Serverless LZ-String State Sharing,
+// OOP Scoring Strategy, Real Calendar Streaks, and Action State Machines.
 // ---------------------------------------------------------------------------
 
 function App() {
@@ -67,9 +79,41 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
   const [surrenderOpen, setSurrenderOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [shareToast, setShareToast] = useState<string | null>(null);
+
+  // ── Serverless State Sharing (Check URL Hash on Mount) ────────────────────
+  useEffect(() => {
+    const shared = decodeChallengeFromUrl();
+    if (shared && shared.code) {
+      console.log('[lzShare] Loaded shared challenge from URL hash:', shared.title);
+      setChallenge({
+        id: 'shared-' + Math.random().toString(36).substring(2, 8),
+        title: shared.title || 'Shared Bug Challenge',
+        description:
+          shared.description ||
+          `Shared challenge crafted by ${shared.author || 'Anonymous Hacker'}. Inspect and squash the bug!`,
+        difficulty: shared.difficulty || 'medium',
+        category: 'shared',
+        buggyCode: shared.code,
+        correctCode: '',
+        bugLine: shared.bugLine || 1,
+        bugDescription: 'Find and fix the intentional issue in this shared code.',
+        hints: shared.hints || ['Examine code flow, variable scoping, and edge cases.'],
+        testCases: (shared.tests || []).map((t) => ({
+          input: typeof t.input === 'string' ? t.input : JSON.stringify(t.input),
+          expectedOutput:
+            typeof t.expected === 'string' ? t.expected : JSON.stringify(t.expected),
+        })),
+        timeLimit: 120,
+        points: 250,
+      });
+      setPhase('playing');
+    }
+  }, [setChallenge, setPhase]);
 
   // ── Apply / remove CRT class on body ────────────────────────────────────
   useEffect(() => {
@@ -208,6 +252,36 @@ function App() {
     triggerScreenShake,
   ]);
 
+  // ── 6. Share Challenge via URL Compression ──────────────────────────────
+  const handleShareChallenge = useCallback(async () => {
+    if (!challenge) return;
+    play('click');
+    const profile = await getPlayerProfile();
+    const payload: ShareableChallengePayload = {
+      title: challenge.title,
+      code: playerCode,
+      difficulty: challenge.difficulty,
+      description: challenge.description,
+      bugLine: challenge.bugLine,
+      hints: challenge.hints,
+      tests: challenge.testCases.map((tc) => ({
+        input: [tc.input],
+        expected: tc.expectedOutput,
+      })),
+      author: profile.callsign,
+    };
+
+    const url = encodeChallengeToUrl(payload);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareToast('Challenge URL copied to clipboard!');
+      setTimeout(() => setShareToast(null), 4000);
+    } catch {
+      setShareToast('Failed to copy link. Check clipboard permissions.');
+      setTimeout(() => setShareToast(null), 4000);
+    }
+  }, [challenge, playerCode, play]);
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div
@@ -248,6 +322,20 @@ function App() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Profile & Hacker Badges Modal */}
+          <button
+            className="btn-neon"
+            onClick={() => {
+              setProfileOpen(true);
+              play('click');
+            }}
+            title="Player Profile & Hacker Badges"
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <User size={16} /> Profile
+            </span>
+          </button>
+
           {/* CRT FX toggle */}
           <button
             className="btn-neon"
@@ -319,6 +407,40 @@ function App() {
               }}
             >
               <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Share Toast Banner */}
+        {shareToast && (
+          <div
+            className="glass-card animate-score-pop"
+            style={{
+              padding: '12px 18px',
+              border: '1px solid var(--neon-green)',
+              background: 'rgba(57, 255, 20, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: 'var(--neon-green)',
+              fontSize: '0.85rem',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Check size={16} />
+              <span>{shareToast}</span>
+            </div>
+            <button
+              onClick={() => setShareToast(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--neon-green)',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={14} />
             </button>
           </div>
         )}
@@ -470,28 +592,58 @@ function App() {
                 >
                   {challenge.description}
                 </p>
-                {/* Ctrl+Enter hint */}
+
+                {/* Sub-bar: Ctrl+Enter shortcut + Share Challenge button */}
                 <div
                   style={{
-                    marginTop: '10px',
-                    fontSize: '0.7rem',
-                    color: 'var(--text-muted)',
-                    fontFamily: 'var(--font-mono)',
+                    marginTop: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '8px',
                   }}
                 >
-                  <span
+                  <div
                     style={{
-                      background: 'rgba(0,229,255,0.1)',
-                      border: '1px solid rgba(0,229,255,0.3)',
-                      borderRadius: '4px',
-                      padding: '1px 6px',
-                      color: 'var(--neon-cyan)',
-                      marginRight: '4px',
+                      fontSize: '0.7rem',
+                      color: 'var(--text-muted)',
+                      fontFamily: 'var(--font-mono)',
                     }}
                   >
-                    Ctrl+Enter
-                  </span>
-                  to submit fix from editor
+                    <span
+                      style={{
+                        background: 'rgba(0,229,255,0.1)',
+                        border: '1px solid rgba(0,229,255,0.3)',
+                        borderRadius: '4px',
+                        padding: '1px 6px',
+                        color: 'var(--neon-cyan)',
+                        marginRight: '4px',
+                      }}
+                    >
+                      Ctrl+Enter
+                    </span>
+                    to submit fix from editor
+                  </div>
+
+                  <button
+                    onClick={handleShareChallenge}
+                    style={{
+                      background: 'rgba(0, 240, 255, 0.1)',
+                      border: '1px solid var(--neon-cyan)',
+                      color: 'var(--neon-cyan)',
+                      borderRadius: '4px',
+                      padding: '4px 10px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '0.7rem',
+                    }}
+                    title="Copy 100% serverless URL link to this challenge"
+                  >
+                    <Share2 size={12} /> Share URL
+                  </button>
                 </div>
               </div>
 
@@ -604,7 +756,9 @@ function App() {
               <button
                 className="btn-neon btn-neon-yellow"
                 onClick={handleOpenHint}
-                disabled={hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0}
+                disabled={
+                  hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0
+                }
                 style={{
                   opacity:
                     hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0
@@ -613,7 +767,8 @@ function App() {
                 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Lightbulb size={16} /> Hint ({hintContext.hintsUsed}/{hintContext.maxHints})
+                  <Lightbulb size={16} /> Hint ({hintContext.hintsUsed}/
+                  {hintContext.maxHints})
                 </span>
               </button>
 
@@ -670,7 +825,7 @@ function App() {
           fontFamily: 'var(--font-mono)',
         }}
       >
-        CodeDuel: BugBounty Arena — OOP Scoring Engine & Calendar Streak System
+        CodeDuel: BugBounty Arena — OOP Scoring Engine • Calendar Streaks • Dexie Persistence • LZ-String Sharing
       </footer>
 
       {/* ── Modals with State Machine Connections ────────────────────────── */}
@@ -678,6 +833,7 @@ function App() {
       <DefeatModal onNextChallenge={handleNewChallenge} />
       <HintModal open={hintOpen} onClose={() => setHintOpen(false)} />
       <SurrenderModal open={surrenderOpen} onClose={() => setSurrenderOpen(false)} />
+      <PlayerProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }
