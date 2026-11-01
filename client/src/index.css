@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Press+Start+2P&display=swap');
 @import "tailwindcss";
+@import "./assets/styles/pixel-theme.css";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CodeDuel: BugBounty Arena — Cyberpunk / Retro Arcade Design System
@@ -337,24 +338,32 @@ body::after {
   border-radius: 9999px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .badge-easy {
   background: rgba(57, 255, 20, 0.15);
   color: var(--neon-green);
   border: 1px solid rgba(57, 255, 20, 0.3);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .badge-medium {
   background: rgba(255, 230, 0, 0.15);
   color: var(--neon-yellow);
   border: 1px solid rgba(255, 230, 0, 0.3);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .badge-hard {
   background: rgba(255, 0, 60, 0.15);
   color: var(--neon-red);
   border: 1px solid rgba(255, 0, 60, 0.3);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 /* Combo Multiplier */
@@ -382,38 +391,67 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Phase 2: CRT FX, Scanlines, Chromatic Aberration & Screen Shake
+   Lightweight Scanlines CSS Filter & Chromatic Aberration
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Scanline rolling sweep across viewport when CRT mode is active */
+/* Lightweight scanlines overlay across viewport when scanlines mode is active */
+body.scanlines-active::before,
 body.crt-active::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 9998;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 3px,
-    rgba(0, 0, 0, 0.08) 3px,
-    rgba(0, 0, 0, 0.08) 4px
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.22) 50%
+  ),
+  linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.02),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.02)
   );
-  animation: crtScanRoll 6s linear infinite;
+  background-size: 100% 3px, 6px 100%;
+  opacity: 0.85;
 }
 
-@keyframes crtScanRoll {
-  0%   { background-position: 0 0; }
-  100% { background-position: 0 4px; }
+body.scanlines-active,
+body.crt-active {
+  filter: contrast(1.03) brightness(1.02);
 }
 
 /* Chromatic aberration toggle effect */
+body.scanlines-active .arcade-text,
+body.scanlines-active .neon-text,
 body.crt-active .arcade-text,
 body.crt-active .neon-text {
   text-shadow:
     -1.5px 0 rgba(255, 0, 85, 0.45),
      1.5px 0 rgba(0, 229, 255, 0.45),
      0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Print Styles for Badges & Game Graphics
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .badge,
+  .badge-easy,
+  .badge-medium,
+  .badge-hard,
+  .pixel-badge,
+  [class*="badge"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
 
 /* Screen Shake Animation */

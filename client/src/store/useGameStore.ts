@@ -111,6 +111,7 @@ export interface GameState {
   soundEnabled: boolean;
   showDiff: boolean;
   crtEnabled: boolean;
+  scanlinesEnabled: boolean;
   screenShake: boolean;
 
   // Store actions
@@ -138,11 +139,47 @@ export interface GameState {
   toggleSound: () => void;
   toggleDiff: () => void;
   toggleCRT: () => void;
+  toggleScanlines: () => void;
   triggerScreenShake: () => void;
   resetGame: () => void;
 }
 
 const STREAK_STORAGE_KEY = 'codeduel_bugbounty_streak_v1';
+const SCANLINES_STORAGE_KEY = 'codeduel_scanlines_enabled';
+
+/**
+ * Loads scanlines / CRT filter preference from browser localStorage.
+ *
+ * @returns Boolean flag indicating whether the scanlines filter is active.
+ */
+function loadStoredScanlines(): boolean {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const stored = localStorage.getItem(SCANLINES_STORAGE_KEY);
+      if (stored !== null) {
+        return stored === 'true';
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load scanlines preference from localStorage:', err);
+  }
+  return true;
+}
+
+/**
+ * Persists scanlines / CRT filter preference to browser localStorage.
+ *
+ * @param enabled Whether scanlines filter is active.
+ */
+function saveStoredScanlines(enabled: boolean): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(SCANLINES_STORAGE_KEY, String(enabled));
+    }
+  } catch (err) {
+    console.warn('Failed to save scanlines preference to localStorage:', err);
+  }
+}
 
 /**
  * Loads serialized streak record from browser localStorage.
@@ -185,6 +222,7 @@ function saveStoredStreak(record: StreakRecord): void {
 }
 
 const initialStreak = loadStoredStreak();
+const initialScanlines = loadStoredScanlines();
 const scoreCalculator = new ScoreCalculator(new ArcadeScoringStrategy());
 
 export const useGameStore = create<GameState>()(
@@ -217,7 +255,8 @@ export const useGameStore = create<GameState>()(
     difficulty: 'medium',
     soundEnabled: true,
     showDiff: false,
-    crtEnabled: true,
+    crtEnabled: initialScanlines,
+    scanlinesEnabled: initialScanlines,
     screenShake: false,
 
     // Actions
@@ -427,7 +466,17 @@ export const useGameStore = create<GameState>()(
 
     toggleDiff: () => set((s) => ({ showDiff: !s.showDiff })),
 
-    toggleCRT: () => set((s) => ({ crtEnabled: !s.crtEnabled })),
+    toggleCRT: () => {
+      const next = !get().scanlinesEnabled;
+      saveStoredScanlines(next);
+      set({ scanlinesEnabled: next, crtEnabled: next });
+    },
+
+    toggleScanlines: () => {
+      const next = !get().scanlinesEnabled;
+      saveStoredScanlines(next);
+      set({ scanlinesEnabled: next, crtEnabled: next });
+    },
 
     triggerScreenShake: () => {
       set({ screenShake: true });

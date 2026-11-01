@@ -5,8 +5,9 @@
  * in real time without external audio file dependencies.
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useGameStore } from '@/store/useGameStore';
+import { AudioManager } from '@/core/services/AudioManager';
 
 export type SoundType =
   | 'correct'
@@ -25,20 +26,10 @@ export type SoundType =
  * @returns Interface exposing the play method and individual tone generators.
  */
 export function useAudioSFX() {
-  const audioCtxRef = useRef<AudioContext | null>(null);
   const soundEnabled = useGameStore((s) => s.soundEnabled);
 
   const getCtx = useCallback(() => {
-    if (!audioCtxRef.current) {
-      const AudioCtxClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioCtxRef.current = new AudioCtxClass();
-    }
-    if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume().catch(() => {});
-    }
-    return audioCtxRef.current;
+    return AudioManager.getContext();
   }, []);
 
   const playTone = useCallback(
@@ -52,6 +43,7 @@ export function useAudioSFX() {
       if (!soundEnabled) return;
       try {
         const ctx = getCtx();
+        if (!ctx) return;
         const startTime = ctx.currentTime + startDelay;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();

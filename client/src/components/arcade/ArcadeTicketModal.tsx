@@ -124,6 +124,7 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
         {/* Printable Ticket Area */}
         <div
           ref={ticketRef}
+          className="printable-ticket"
           style={{
             background: 'linear-gradient(135deg, #0d0e1c 0%, #15162b 100%)',
             border: '2px dashed #00f0ff',
@@ -133,6 +134,8 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
             color: '#f0f0ff',
             fontFamily: 'var(--font-mono)',
             boxShadow: 'inset 0 0 20px rgba(0, 240, 255, 0.1)',
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact',
           }}
         >
           {/* Top Notch Stamp */}

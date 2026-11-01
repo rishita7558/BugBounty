@@ -29,6 +29,7 @@ import {
 import { getPlayerProfile } from '@/lib/db';
 import { GameActionMachine } from '@/core/state/GameActionMachine';
 import { HintStateMachine } from '@/core/state/HintStateMachine';
+import { AudioManager } from '@/core/services/AudioManager';
 import {
   Zap,
   Bug,
@@ -65,7 +66,7 @@ function App() {
   const difficulty = useGameStore((s) => s.difficulty);
   const soundEnabled = useGameStore((s) => s.soundEnabled);
   const showDiff = useGameStore((s) => s.showDiff);
-  const crtEnabled = useGameStore((s) => s.crtEnabled);
+  const scanlinesEnabled = useGameStore((s) => s.scanlinesEnabled ?? s.crtEnabled);
   const screenShake = useGameStore((s) => s.screenShake);
   const timeRemaining = useGameStore((s) => s.timeRemaining);
   const hintContext = useGameStore((s) => s.hintContext);
@@ -78,7 +79,7 @@ function App() {
   const setDifficulty = useGameStore((s) => s.setDifficulty);
   const toggleSound = useGameStore((s) => s.toggleSound);
   const toggleDiff = useGameStore((s) => s.toggleDiff);
-  const toggleCRT = useGameStore((s) => s.toggleCRT);
+  const toggleScanlines = useGameStore((s) => s.toggleScanlines ?? s.toggleCRT);
   const triggerScreenShake = useGameStore((s) => s.triggerScreenShake);
   const resetGame = useGameStore((s) => s.resetGame);
   const clearActionError = useGameStore((s) => s.clearActionError);
@@ -125,12 +126,23 @@ function App() {
   }, [setChallenge, setPhase]);
 
   /**
-   * Toggles the retro CRT scanline shader class on the document body.
+   * Integrates AudioManager with the window gesture listener to safely handle browser audio autoplay policies.
    */
   useEffect(() => {
-    document.body.classList.toggle('crt-active', crtEnabled);
-    return () => document.body.classList.remove('crt-active');
-  }, [crtEnabled]);
+    AudioManager.setupGestureUnlock();
+  }, []);
+
+  /**
+   * Toggles the lightweight retro scanlines CSS filter on the document body.
+   */
+  useEffect(() => {
+    document.body.classList.toggle('scanlines-active', scanlinesEnabled);
+    document.body.classList.toggle('crt-active', scanlinesEnabled);
+    return () => {
+      document.body.classList.remove('scanlines-active');
+      document.body.classList.remove('crt-active');
+    };
+  }, [scanlinesEnabled]);
 
   const activeError = localError || actionError;
 
@@ -355,15 +367,15 @@ function App() {
               </span>
             </button>
 
-            {/* CRT visual effects toggle */}
+            {/* Lightweight scanlines CSS filter toggle */}
             <button
               className="btn-neon"
               onClick={() => {
-                toggleCRT();
+                toggleScanlines();
                 play('click');
               }}
-              style={{ padding: '8px', opacity: crtEnabled ? 1 : 0.45 }}
-              title={crtEnabled ? 'Disable CRT FX' : 'Enable CRT FX'}
+              style={{ padding: '8px', opacity: scanlinesEnabled ? 1 : 0.45 }}
+              title={scanlinesEnabled ? 'Disable Scanlines Filter' : 'Enable Scanlines Filter'}
             >
               <span><Tv2 size={16} /></span>
             </button>

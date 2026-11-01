@@ -227,7 +227,7 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
               {profile?.unlockedBadges.map((badge) => (
                 <span
                   key={badge}
-                  className="badge"
+                  className="badge pixel-badge"
                   style={{
                     background: 'rgba(255, 230, 0, 0.1)',
                     border: '1px solid rgba(255, 230, 0, 0.4)',
@@ -237,6 +237,8 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
+                    WebkitPrintColorAdjust: 'exact',
+                    printColorAdjust: 'exact',
                   }}
                 >
                   <ShieldCheck size={12} /> {badge.replace(/_/g, ' ')}

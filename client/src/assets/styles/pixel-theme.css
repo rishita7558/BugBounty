@@ -1,0 +1,312 @@
+/**
+ * @file pixel-theme.css
+ * @description Pixel-art design system and retro 8-bit styling for CodeDuel: BugBounty Arena.
+ * Provides authentic pixelated borders, arcade typography, crisp image-rendering,
+ * retro button controls, and print-ready achievement badges.
+ */
+
+/* ── Pixel Font & Typography Tokens ───────────────────────────────────────── */
+:root {
+  --font-pixel: 'Press Start 2P', monospace;
+  --pixel-border-width: 2px;
+  --pixel-shadow-sm:
+    0 -2px 0 0 rgba(0, 0, 0, 0.8),
+    2px 0 0 0 rgba(0, 0, 0, 0.8),
+    0 2px 0 0 rgba(0, 0, 0, 0.8),
+    -2px 0 0 0 rgba(0, 0, 0, 0.8);
+  --pixel-shadow-cyan:
+    0 -2px 0 0 #00e5ff,
+    2px 0 0 0 #00e5ff,
+    0 2px 0 0 #00e5ff,
+    -2px 0 0 0 #00e5ff,
+    0 0 10px rgba(0, 229, 255, 0.5);
+  --pixel-shadow-magenta:
+    0 -2px 0 0 #ff00e5,
+    2px 0 0 0 #ff00e5,
+    0 2px 0 0 #ff00e5,
+    -2px 0 0 0 #ff00e5,
+    0 0 10px rgba(255, 0, 229, 0.5);
+}
+
+/* ── Image & Canvas Crisp Pixel Rendering ─────────────────────────────────── */
+.pixel-art,
+.pixelated,
+img.pixel-art,
+canvas.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* ── Pixel Typography ─────────────────────────────────────────────────────── */
+.pixel-text {
+  font-family: var(--font-pixel);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.pixel-title {
+  font-family: var(--font-pixel);
+  font-size: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--neon-cyan, #00e5ff);
+  text-shadow: 2px 2px 0 #000, 0 0 10px rgba(0, 229, 255, 0.6);
+}
+
+.pixel-subtext {
+  font-family: var(--font-pixel);
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  color: var(--text-secondary, #8888a0);
+}
+
+/* ── Stepped Pixel Borders & Containers ──────────────────────────────────── */
+.pixel-box {
+  position: relative;
+  background: var(--bg-card, #121526);
+  border: 2px solid #000000;
+  box-shadow:
+    -3px 0 0 0 #000000,
+    3px 0 0 0 #000000,
+    0 -3px 0 0 #000000,
+    0 3px 0 0 #000000;
+  padding: 16px;
+  image-rendering: pixelated;
+}
+
+.pixel-box-cyan {
+  border-color: #00e5ff;
+  box-shadow:
+    -3px 0 0 0 #00e5ff,
+    3px 0 0 0 #00e5ff,
+    0 -3px 0 0 #00e5ff,
+    0 3px 0 0 #00e5ff,
+    0 0 12px rgba(0, 229, 255, 0.35);
+}
+
+.pixel-box-magenta {
+  border-color: #ff00e5;
+  box-shadow:
+    -3px 0 0 0 #ff00e5,
+    3px 0 0 0 #ff00e5,
+    0 -3px 0 0 #ff00e5,
+    0 3px 0 0 #ff00e5,
+    0 0 12px rgba(255, 0, 229, 0.35);
+}
+
+.pixel-box-green {
+  border-color: #00ffa3;
+  box-shadow:
+    -3px 0 0 0 #00ffa3,
+    3px 0 0 0 #00ffa3,
+    0 -3px 0 0 #00ffa3,
+    0 3px 0 0 #00ffa3,
+    0 0 12px rgba(0, 255, 163, 0.35);
+}
+
+/* ── Pixel Buttons ────────────────────────────────────────────────────────── */
+.pixel-btn,
+.btn-pixel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-family: var(--font-pixel);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--neon-cyan, #00e5ff);
+  background: var(--bg-secondary, #121526);
+  border: 2px solid var(--neon-cyan, #00e5ff);
+  box-shadow:
+    -2px 0 0 0 var(--neon-cyan, #00e5ff),
+    2px 0 0 0 var(--neon-cyan, #00e5ff),
+    0 -2px 0 0 var(--neon-cyan, #00e5ff),
+    0 2px 0 0 var(--neon-cyan, #00e5ff);
+  cursor: pointer;
+  transition: transform 0.08s step-end, box-shadow 0.08s step-end;
+  position: relative;
+  user-select: none;
+}
+
+.pixel-btn:hover,
+.btn-pixel:hover {
+  background: var(--neon-cyan, #00e5ff);
+  color: #090a0f;
+  box-shadow:
+    -2px 0 0 0 #ffffff,
+    2px 0 0 0 #ffffff,
+    0 -2px 0 0 #ffffff,
+    0 2px 0 0 #ffffff,
+    0 0 14px rgba(0, 229, 255, 0.6);
+}
+
+.pixel-btn:active,
+.btn-pixel:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.pixel-btn-magenta,
+.btn-pixel-magenta {
+  color: var(--neon-magenta, #ff00e5);
+  border-color: var(--neon-magenta, #ff00e5);
+  box-shadow:
+    -2px 0 0 0 var(--neon-magenta, #ff00e5),
+    2px 0 0 0 var(--neon-magenta, #ff00e5),
+    0 -2px 0 0 var(--neon-magenta, #ff00e5),
+    0 2px 0 0 var(--neon-magenta, #ff00e5);
+}
+
+.pixel-btn-magenta:hover,
+.btn-pixel-magenta:hover {
+  background: var(--neon-magenta, #ff00e5);
+  color: #090a0f;
+  box-shadow:
+    -2px 0 0 0 #ffffff,
+    2px 0 0 0 #ffffff,
+    0 -2px 0 0 #ffffff,
+    0 2px 0 0 #ffffff,
+    0 0 14px rgba(255, 0, 229, 0.6);
+}
+
+.pixel-btn-green,
+.btn-pixel-green {
+  color: var(--neon-green, #00ffa3);
+  border-color: var(--neon-green, #00ffa3);
+  box-shadow:
+    -2px 0 0 0 var(--neon-green, #00ffa3),
+    2px 0 0 0 var(--neon-green, #00ffa3),
+    0 -2px 0 0 var(--neon-green, #00ffa3),
+    0 2px 0 0 var(--neon-green, #00ffa3);
+}
+
+.pixel-btn-green:hover,
+.btn-pixel-green:hover {
+  background: var(--neon-green, #00ffa3);
+  color: #090a0f;
+  box-shadow:
+    -2px 0 0 0 #ffffff,
+    2px 0 0 0 #ffffff,
+    0 -2px 0 0 #ffffff,
+    0 2px 0 0 #ffffff,
+    0 0 14px rgba(0, 255, 163, 0.6);
+}
+
+/* ── Pixel Achievement & Difficulty Badges ────────────────────────────────── */
+.pixel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-family: var(--font-pixel);
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 0;
+  border: 1px solid currentColor;
+  box-shadow:
+    -1px 0 0 0 currentColor,
+    1px 0 0 0 currentColor,
+    0 -1px 0 0 currentColor,
+    0 1px 0 0 currentColor;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  background-clip: padding-box;
+}
+
+.pixel-badge-easy {
+  background: rgba(0, 255, 163, 0.15);
+  color: var(--neon-green, #00ffa3);
+  border-color: rgba(0, 255, 163, 0.5);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.pixel-badge-medium {
+  background: rgba(255, 230, 0, 0.15);
+  color: var(--neon-yellow, #ffe600);
+  border-color: rgba(255, 230, 0, 0.5);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.pixel-badge-hard {
+  background: rgba(255, 0, 85, 0.15);
+  color: var(--neon-red, #ff0055);
+  border-color: rgba(255, 0, 85, 0.5);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.pixel-badge-cyan {
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--neon-cyan, #00e5ff);
+  border-color: rgba(0, 229, 255, 0.5);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.pixel-badge-magenta {
+  background: rgba(255, 0, 229, 0.15);
+  color: var(--neon-magenta, #ff00e5);
+  border-color: rgba(255, 0, 229, 0.5);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── Lightweight Scanlines CSS Filter ─────────────────────────────────────── */
+.scanlines-filter {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines-filter::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.22) 50%
+  ),
+  linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.02),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.02)
+  );
+  background-size: 100% 3px, 6px 100%;
+  opacity: 0.85;
+  z-index: 10;
+}
+
+/* ── Print Styles for Badges & Pixel Graphics ────────────────────────────── */
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .badge,
+  .badge-easy,
+  .badge-medium,
+  .badge-hard,
+  .pixel-badge,
+  .pixel-badge-easy,
+  .pixel-badge-medium,
+  .pixel-badge-hard,
+  .pixel-badge-cyan,
+  .pixel-badge-magenta,
+  [class*="badge"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+

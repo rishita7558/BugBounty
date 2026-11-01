@@ -118,5 +118,60 @@ describe('useGameStore Game Mechanics & State Integration', () => {
     expect(state.timerActive).toBe(false);
     expect(state.phase).toBe('defeat');
   });
+
+  it('toggles scanlines filter and persists preference to localStorage', () => {
+    const storage: Record<string, string> = {};
+    const mockLocalStorage = {
+      getItem: (key: string) => storage[key] ?? null,
+      setItem: (key: string, val: string) => {
+        storage[key] = val;
+      },
+      removeItem: (key: string) => {
+        delete storage[key];
+      },
+      clear: () => {
+        Object.keys(storage).forEach((k) => delete storage[k]);
+      },
+    };
+    (globalThis as unknown as { window: unknown }).window = { localStorage: mockLocalStorage };
+    (globalThis as unknown as { localStorage: unknown }).localStorage = mockLocalStorage;
+
+    const initial = useGameStore.getState().scanlinesEnabled;
+    useGameStore.getState().toggleScanlines();
+
+    const afterFirstToggle = useGameStore.getState().scanlinesEnabled;
+    expect(afterFirstToggle).toBe(!initial);
+    expect(mockLocalStorage.getItem('codeduel_scanlines_enabled')).toBe(String(!initial));
+
+    useGameStore.getState().toggleScanlines();
+    const afterSecondToggle = useGameStore.getState().scanlinesEnabled;
+    expect(afterSecondToggle).toBe(initial);
+    expect(mockLocalStorage.getItem('codeduel_scanlines_enabled')).toBe(String(initial));
+  });
+
+  it('toggleCRT mirrors toggleScanlines and persists to localStorage', () => {
+    const storage: Record<string, string> = {};
+    const mockLocalStorage = {
+      getItem: (key: string) => storage[key] ?? null,
+      setItem: (key: string, val: string) => {
+        storage[key] = val;
+      },
+      removeItem: (key: string) => {
+        delete storage[key];
+      },
+      clear: () => {
+        Object.keys(storage).forEach((k) => delete storage[k]);
+      },
+    };
+    (globalThis as unknown as { window: unknown }).window = { localStorage: mockLocalStorage };
+    (globalThis as unknown as { localStorage: unknown }).localStorage = mockLocalStorage;
+
+    const initial = useGameStore.getState().crtEnabled;
+    useGameStore.getState().toggleCRT();
+
+    expect(useGameStore.getState().crtEnabled).toBe(!initial);
+    expect(useGameStore.getState().scanlinesEnabled).toBe(!initial);
+    expect(mockLocalStorage.getItem('codeduel_scanlines_enabled')).toBe(String(!initial));
+  });
 });
 

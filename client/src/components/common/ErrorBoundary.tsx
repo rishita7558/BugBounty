@@ -5,7 +5,7 @@
  */
 
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
-import { AlertTriangle, RotateCcw, Bug, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 
 /**
  * Properties accepted by the ErrorBoundary component.
@@ -81,12 +81,22 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
    * Resets the boundary state, attempting to re-render the child component tree.
    */
   public resetErrorBoundary = (): void => {
-    this.setState({
+    Object.assign(this.state, {
       hasError: false,
       error: null,
       errorInfo: null,
       showDetails: false,
     });
+    try {
+      this.setState({
+        hasError: false,
+        error: null,
+        errorInfo: null,
+        showDetails: false,
+      });
+    } catch {
+      // Ignored when unmounted
+    }
     this.props.onReset?.();
   };
 
@@ -94,7 +104,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
    * Toggles the visibility of technical stack trace diagnostics.
    */
   public toggleDetails = (): void => {
-    this.setState((prev) => ({ showDetails: !prev.showDetails }));
+    const nextShow = !this.state.showDetails;
+    Object.assign(this.state, { showDetails: nextShow });
+    try {
+      this.setState({ showDetails: nextShow });
+    } catch {
+      // Ignored when unmounted
+    }
   };
 
   public override render(): ReactNode {

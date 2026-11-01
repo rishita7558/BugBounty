@@ -16,9 +16,13 @@ describe('ErrorBoundary Component Lifecycle', () => {
   });
 
   it('resets error state when resetErrorBoundary is triggered', () => {
+    let resetCalled = false;
     const boundary = new ErrorBoundary({
       children: null,
       componentName: 'TestSubtree',
+      onReset: () => {
+        resetCalled = true;
+      },
     });
 
     // Simulate caught error
@@ -27,15 +31,6 @@ describe('ErrorBoundary Component Lifecycle', () => {
       error: new Error('Fault'),
       errorInfo: null,
       showDetails: true,
-    };
-
-    let resetCalled = false;
-    boundary.props = {
-      children: null,
-      componentName: 'TestSubtree',
-      onReset: () => {
-        resetCalled = true;
-      },
     };
 
     boundary.resetErrorBoundary();
