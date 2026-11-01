@@ -4,6 +4,11 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { llmRateLimiter, generalRateLimiter } from './middleware/rateLimiter.js';
 import { generateChallenge, reviewCode } from './controllers/challenge.controller.js';
 import { getHint } from './controllers/hint.controller.js';
+import {
+  validateScore,
+  validateStreak,
+  validateHintRequest,
+} from './controllers/validation.controller.js';
 
 // ---------------------------------------------------------------------------
 // Express App — Minimal LLM security proxy & CORS gateway.
@@ -34,6 +39,11 @@ app.get('/api/health', generalRateLimiter, (_req, res) => {
 app.post('/api/challenge/generate', llmRateLimiter, generateChallenge);
 app.post('/api/challenge/review', llmRateLimiter, reviewCode);
 app.post('/api/hint', llmRateLimiter, getHint);
+
+// ── Validation & Integrity Endpoints ─────────────────────────────────────
+app.post('/api/score/validate', generalRateLimiter, validateScore);
+app.post('/api/streak/validate', generalRateLimiter, validateStreak);
+app.post('/api/hint/validate', generalRateLimiter, validateHintRequest);
 
 // ── Error Handler (must be last) ─────────────────────────────────────────
 app.use(errorHandler);

@@ -1,15 +1,18 @@
 import { useGameStore } from '@/store/useGameStore';
 import { formatScore } from '@/lib/utils';
+import { Flame, CheckCircle, Trophy } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// Scoreboard — Displays score, combo multiplier, and stats
+// Scoreboard — Displays score, combo multiplier, calendar streak, and solved count
+// Strict differentiation between total problems solved and daily calendar streak.
 // ---------------------------------------------------------------------------
 
 export function Scoreboard() {
   const score = useGameStore((s) => s.score);
   const combo = useGameStore((s) => s.combo);
-  const maxCombo = useGameStore((s) => s.maxCombo);
   const totalSolved = useGameStore((s) => s.totalSolved);
+  const currentStreak = useGameStore((s) => s.currentStreak);
+  const highestStreak = useGameStore((s) => s.highestStreak);
 
   const multiplier = 1 + (combo - 1) * 0.25;
 
@@ -67,28 +70,48 @@ export function Scoreboard() {
         </div>
       )}
 
-      {/* Stats */}
+      {/* Stats Cluster: Solved vs Calendar Streak vs Best */}
       <div
         style={{
           display: 'flex',
-          gap: '16px',
+          gap: '20px',
           marginLeft: 'auto',
           fontSize: '0.75rem',
           color: 'var(--text-secondary)',
           fontFamily: 'var(--font-mono)',
         }}
       >
+        {/* Total Solved Problems */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ color: 'var(--neon-green)', fontSize: '1rem', fontWeight: 700 }}>
-            {totalSolved}
-          </span>
-          <span style={{ fontSize: '0.6rem' }}>SOLVED</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <CheckCircle size={13} color="var(--neon-green)" />
+            <span style={{ color: 'var(--neon-green)', fontSize: '1.1rem', fontWeight: 700 }}>
+              {totalSolved}
+            </span>
+          </div>
+          <span style={{ fontSize: '0.55rem', letterSpacing: '1px' }}>SOLVED</span>
         </div>
+
+        {/* Daily Calendar Streak */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ color: 'var(--neon-yellow)', fontSize: '1rem', fontWeight: 700 }}>
-            {maxCombo}
-          </span>
-          <span style={{ fontSize: '0.6rem' }}>BEST</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <Flame size={14} color="var(--neon-yellow)" />
+            <span style={{ color: 'var(--neon-yellow)', fontSize: '1.1rem', fontWeight: 700 }}>
+              {currentStreak}d
+            </span>
+          </div>
+          <span style={{ fontSize: '0.55rem', letterSpacing: '1px' }}>STREAK</span>
+        </div>
+
+        {/* Best Streak */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <Trophy size={13} color="var(--neon-cyan)" />
+            <span style={{ color: 'var(--neon-cyan)', fontSize: '1.1rem', fontWeight: 700 }}>
+              {highestStreak}d
+            </span>
+          </div>
+          <span style={{ fontSize: '0.55rem', letterSpacing: '1px' }}>RECORD</span>
         </div>
       </div>
     </div>

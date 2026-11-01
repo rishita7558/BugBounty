@@ -10,43 +10,66 @@ import { Scoreboard } from '@/components/arcade/Scoreboard';
 import { VictoryModal } from '@/components/modals/VictoryModal';
 import { DefeatModal } from '@/components/modals/DefeatModal';
 import { HintModal } from '@/components/modals/HintModal';
-import { Zap, Bug, Play, Send, Lightbulb, Volume2, VolumeX, RotateCcw, Terminal, Tv2 } from 'lucide-react';
+import { SurrenderModal } from '@/components/modals/SurrenderModal';
+import { GameActionMachine } from '@/core/state/GameActionMachine';
+import { HintStateMachine } from '@/core/state/HintStateMachine';
+import {
+  Zap,
+  Bug,
+  Play,
+  Send,
+  Lightbulb,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  Terminal,
+  Tv2,
+  Flag,
+  AlertCircle,
+  X,
+} from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// App — CodeDuel: BugBounty Arena
+// App — CodeDuel: BugBounty Arena (OOP Refactored Engine)
 // ---------------------------------------------------------------------------
 
 function App() {
   useArcadeTimer();
-  const { play }              = useAudioSFX();
+  const { play } = useAudioSFX();
   const { runCode, isRunning } = useCodeRunner();
 
   // ── Store reads ──────────────────────────────────────────────────────────
-  const phase          = useGameStore((s) => s.phase);
-  const challenge      = useGameStore((s) => s.challenge);
-  const playerCode     = useGameStore((s) => s.playerCode);
-  const difficulty     = useGameStore((s) => s.difficulty);
-  const soundEnabled   = useGameStore((s) => s.soundEnabled);
-  const showDiff       = useGameStore((s) => s.showDiff);
-  const crtEnabled     = useGameStore((s) => s.crtEnabled);
-  const screenShake    = useGameStore((s) => s.screenShake);
+  const phase = useGameStore((s) => s.phase);
+  const challenge = useGameStore((s) => s.challenge);
+  const playerCode = useGameStore((s) => s.playerCode);
+  const difficulty = useGameStore((s) => s.difficulty);
+  const soundEnabled = useGameStore((s) => s.soundEnabled);
+  const showDiff = useGameStore((s) => s.showDiff);
+  const crtEnabled = useGameStore((s) => s.crtEnabled);
+  const screenShake = useGameStore((s) => s.screenShake);
+  const timeRemaining = useGameStore((s) => s.timeRemaining);
+  const hintContext = useGameStore((s) => s.hintContext);
+  const actionError = useGameStore((s) => s.actionError);
 
   // ── Store actions ────────────────────────────────────────────────────────
-  const setChallenge       = useGameStore((s) => s.setChallenge);
-  const setPhase           = useGameStore((s) => s.setPhase);
-  const submitReview       = useGameStore((s) => s.submitReview);
-  const setDifficulty      = useGameStore((s) => s.setDifficulty);
-  const toggleSound        = useGameStore((s) => s.toggleSound);
-  const toggleDiff         = useGameStore((s) => s.toggleDiff);
-  const toggleCRT          = useGameStore((s) => s.toggleCRT);
+  const setChallenge = useGameStore((s) => s.setChallenge);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const submitReview = useGameStore((s) => s.submitReview);
+  const setDifficulty = useGameStore((s) => s.setDifficulty);
+  const toggleSound = useGameStore((s) => s.toggleSound);
+  const toggleDiff = useGameStore((s) => s.toggleDiff);
+  const toggleCRT = useGameStore((s) => s.toggleCRT);
   const triggerScreenShake = useGameStore((s) => s.triggerScreenShake);
-  const resetGame          = useGameStore((s) => s.resetGame);
+  const resetGame = useGameStore((s) => s.resetGame);
+  const clearActionError = useGameStore((s) => s.clearActionError);
 
   // ── Local state ──────────────────────────────────────────────────────────
-  const [loading,       setLoading]       = useState(false);
-  const [hintOpen,      setHintOpen]      = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hintOpen, setHintOpen] = useState(false);
+  const [surrenderOpen, setSurrenderOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState('');
-  const [submitting,    setSubmitting]    = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   // ── Apply / remove CRT class on body ────────────────────────────────────
   useEffect(() => {
@@ -54,39 +77,109 @@ function App() {
     return () => document.body.classList.remove('crt-active');
   }, [crtEnabled]);
 
-  // ── Start New Challenge ──────────────────────────────────────────────────
+  // Combined error display
+  const activeError = localError || actionError;
+
+  // ── 1. Next Challenge Transition & Guard ─────────────────────────────────
   const handleNewChallenge = useCallback(async () => {
+    const guard = GameActionMachine.canRequestNextChallenge(phase, loading);
+    if (!guard.allowed) {
+      setLocalError(guard.error ?? 'Cannot start new challenge.');
+      return;
+    }
+
     setLoading(true);
+    setLocalError(null);
+    clearActionError();
     play('start');
+
     try {
       setPhase('loading');
       const ch = await generateChallenge(difficulty);
       setChallenge(ch);
       setConsoleOutput('');
       play('click');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to generate challenge:', err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate challenge. Please check backend connection.';
+      setLocalError(msg);
       setPhase('idle');
     } finally {
       setLoading(false);
     }
-  }, [difficulty, setChallenge, setPhase, play]);
+  }, [difficulty, phase, loading, setChallenge, setPhase, clearActionError, play]);
 
-  // ── Run Code ─────────────────────────────────────────────────────────────
+  // ── 2. Run Tests / Run Code Guard & Error Handler ───────────────────────
   const handleRunCode = useCallback(async () => {
-    play('click');
-    const result = await runCode(playerCode);
-    const output = result.success
-      ? `✅ Execution OK (${result.executionTime}ms)\n${result.output}`
-      : `❌ Error (${result.executionTime}ms)\n${result.error}\n${result.output}`;
-    setConsoleOutput(output);
-  }, [playerCode, runCode, play]);
+    const guard = GameActionMachine.canRunCode(phase, isRunning, playerCode);
+    if (!guard.allowed) {
+      setLocalError(guard.error ?? 'Cannot run code in current state.');
+      return;
+    }
 
-  // ── Submit Fix (button OR Ctrl+Enter from editor) ─────────────────────
+    setLocalError(null);
+    play('click');
+
+    try {
+      const result = await runCode(playerCode);
+      const output = result.success
+        ? `✅ Execution OK (${result.executionTime}ms)\n${result.output}`
+        : `❌ Error (${result.executionTime}ms)\n${result.error}\n${result.output}`;
+      setConsoleOutput(output);
+    } catch (err: unknown) {
+      console.error('Code execution failed:', err);
+      const msg = err instanceof Error ? err.message : 'Unknown runner error';
+      setConsoleOutput(`❌ Execution Failed: ${msg}`);
+      setLocalError(`Execution error: ${msg}`);
+    }
+  }, [phase, isRunning, playerCode, runCode, play]);
+
+  // ── 3. Request Hint Transition & Guard ───────────────────────────────────
+  const handleOpenHint = useCallback(() => {
+    const check = HintStateMachine.canRequestHint(hintContext, timeRemaining, phase);
+    if (!check.allowed) {
+      setLocalError(check.reason ?? 'Hint not available.');
+      return;
+    }
+    setLocalError(null);
+    setHintOpen(true);
+    play('hint');
+  }, [hintContext, timeRemaining, phase, play]);
+
+  // ── 4. Surrender Guard & Confirmation ────────────────────────────────────
+  const handleOpenSurrender = useCallback(() => {
+    const guard = GameActionMachine.canSurrender(phase, submitting);
+    if (!guard.allowed) {
+      setLocalError(guard.error ?? 'Cannot surrender in current state.');
+      return;
+    }
+    setLocalError(null);
+    setSurrenderOpen(true);
+    play('click');
+  }, [phase, submitting, play]);
+
+  // ── 5. Submit Fix Guard & Error Handler ──────────────────────────────────
   const handleSubmit = useCallback(async () => {
     if (!challenge) return;
+
+    const guard = GameActionMachine.canSubmitFix(
+      phase,
+      submitting,
+      timeRemaining,
+      playerCode
+    );
+    if (!guard.allowed) {
+      setLocalError(guard.error ?? 'Submission not allowed.');
+      return;
+    }
+
     setSubmitting(true);
+    setLocalError(null);
     play('click');
+
     try {
       const review = await reviewCode(challenge.buggyCode, playerCode, challenge.id);
       submitReview(review);
@@ -97,12 +190,23 @@ function App() {
       if (!review.correct) {
         triggerScreenShake();
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Review failed:', err);
+      const msg = err instanceof Error ? err.message : 'Code review service failed.';
+      setLocalError(`Review error: ${msg}`);
     } finally {
       setSubmitting(false);
     }
-  }, [challenge, playerCode, submitReview, play, triggerScreenShake]);
+  }, [
+    challenge,
+    phase,
+    submitting,
+    timeRemaining,
+    playerCode,
+    submitReview,
+    play,
+    triggerScreenShake,
+  ]);
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -113,21 +217,32 @@ function App() {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header
         style={{
-          padding:        '16px 24px',
-          display:        'flex',
-          alignItems:     'center',
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom:   '1px solid var(--border-subtle)',
-          flexWrap:       'wrap',
-          gap:            '12px',
+          borderBottom: '1px solid var(--border-subtle)',
+          flexWrap: 'wrap',
+          gap: '12px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Bug size={28} color="var(--neon-cyan)" style={{ filter: 'drop-shadow(0 0 6px rgba(0,240,255,0.5))' }} />
+          <Bug
+            size={28}
+            color="var(--neon-cyan)"
+            style={{ filter: 'drop-shadow(0 0 6px rgba(0,240,255,0.5))' }}
+          />
           <h1 className="arcade-text neon-text" style={{ fontSize: '0.75rem', margin: 0 }}>
             CodeDuel
           </h1>
-          <span style={{ fontSize: '0.6rem', color: 'var(--neon-magenta)', fontFamily: 'var(--font-arcade)', opacity: 0.7 }}>
+          <span
+            style={{
+              fontSize: '0.6rem',
+              color: 'var(--neon-magenta)',
+              fontFamily: 'var(--font-arcade)',
+              opacity: 0.7,
+            }}
+          >
             BugBounty Arena
           </span>
         </div>
@@ -136,7 +251,10 @@ function App() {
           {/* CRT FX toggle */}
           <button
             className="btn-neon"
-            onClick={() => { toggleCRT(); play('click'); }}
+            onClick={() => {
+              toggleCRT();
+              play('click');
+            }}
             style={{ padding: '8px', opacity: crtEnabled ? 1 : 0.45 }}
             title={crtEnabled ? 'Disable CRT FX' : 'Enable CRT FX'}
           >
@@ -156,32 +274,88 @@ function App() {
       </header>
 
       {/* ── Main Content ────────────────────────────────────────────────── */}
-      <main style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-        {/* Scoreboard */}
+      <main
+        style={{
+          flex: 1,
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px',
+        }}
+      >
+        {/* Scoreboard with Problem Count vs Calendar Streak */}
         <Scoreboard />
+
+        {/* Global Error Notice with dismiss */}
+        {activeError && (
+          <div
+            className="glass-card animate-shake"
+            style={{
+              padding: '12px 18px',
+              border: '1px solid rgba(255, 0, 85, 0.4)',
+              background: 'rgba(255, 0, 85, 0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: 'var(--neon-red)',
+              fontSize: '0.85rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={18} />
+              <span>{activeError}</span>
+            </div>
+            <button
+              onClick={() => {
+                setLocalError(null);
+                clearActionError();
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--neon-red)',
+                cursor: 'pointer',
+                display: 'flex',
+              }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
         {/* ── Idle / Loading ──────────────────────────────────────────── */}
         {(phase === 'idle' || phase === 'loading') && (
           <div
             className="glass-card"
             style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: '24px', padding: '60px 40px', textAlign: 'center',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '24px',
+              padding: '60px 40px',
+              textAlign: 'center',
             }}
           >
             <div className="animate-float">
-              <Bug size={64} color="var(--neon-cyan)" style={{ filter: 'drop-shadow(0 0 20px rgba(0,240,255,0.4))' }} />
+              <Bug
+                size={64}
+                color="var(--neon-cyan)"
+                style={{ filter: 'drop-shadow(0 0 20px rgba(0,240,255,0.4))' }}
+              />
             </div>
 
             <div>
-              <h2 className="arcade-text neon-text" style={{ fontSize: '1rem', marginBottom: '12px' }}>
+              <h2
+                className="arcade-text neon-text"
+                style={{ fontSize: '1rem', marginBottom: '12px' }}
+              >
                 Ready to Hunt Bugs?
               </h2>
               <p style={{ color: 'var(--text-secondary)', maxWidth: '500px' }}>
-                Find and fix bugs in dynamically generated code challenges.
-                Score points, build combos, and climb the leaderboard — all powered by AI.
+                Find and fix bugs in dynamically generated code challenges. Score points,
+                build calendar streaks, and climb the leaderboard — all powered by AI.
               </p>
             </div>
 
@@ -192,12 +366,20 @@ function App() {
                   key={d}
                   className={`badge badge-${d}`}
                   style={{
-                    cursor: 'pointer', padding: '8px 16px', fontSize: '0.75rem',
-                    border: difficulty === d ? '2px solid currentColor' : '1px solid transparent',
+                    cursor: 'pointer',
+                    padding: '8px 16px',
+                    fontSize: '0.75rem',
+                    border:
+                      difficulty === d
+                        ? '2px solid currentColor'
+                        : '1px solid transparent',
                     transform: difficulty === d ? 'scale(1.1)' : 'scale(1)',
                     transition: 'all 0.2s var(--ease-spring)',
                   }}
-                  onClick={() => { setDifficulty(d); play('click'); }}
+                  onClick={() => {
+                    setDifficulty(d);
+                    play('click');
+                  }}
                 >
                   {d.toUpperCase()}
                 </button>
@@ -208,10 +390,20 @@ function App() {
               className="btn-neon btn-neon-green"
               onClick={handleNewChallenge}
               disabled={loading}
-              style={{ padding: '16px 32px', fontSize: '1rem', opacity: loading ? 0.5 : 1 }}
+              style={{
+                padding: '16px 32px',
+                fontSize: '1rem',
+                opacity: loading ? 0.5 : 1,
+              }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {loading ? <>⏳ Generating Challenge...</> : <><Zap size={20} /> Start Challenge</>}
+                {loading ? (
+                  <>⏳ Generating Challenge...</>
+                ) : (
+                  <>
+                    <Zap size={20} /> Start Challenge
+                  </>
+                )}
               </span>
             </button>
           </div>
@@ -221,29 +413,85 @@ function App() {
         {(phase === 'playing' || phase === 'reviewing') && challenge && (
           <>
             {/* Challenge info + Arcade HUD row */}
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch', flexWrap: 'wrap' }}>
-
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'stretch',
+                flexWrap: 'wrap',
+              }}
+            >
               {/* Challenge card */}
-              <div className="glass-card" style={{ flex: 1, padding: '20px', minWidth: '300px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span className={`badge badge-${challenge.difficulty}`}>{challenge.difficulty}</span>
-                  <span className="badge" style={{ background: 'rgba(0,240,255,0.1)', color: 'var(--neon-cyan)', border: '1px solid rgba(0,240,255,0.2)' }}>
+              <div
+                className="glass-card"
+                style={{ flex: 1, padding: '20px', minWidth: '300px' }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '8px',
+                  }}
+                >
+                  <span className={`badge badge-${challenge.difficulty}`}>
+                    {challenge.difficulty}
+                  </span>
+                  <span
+                    className="badge"
+                    style={{
+                      background: 'rgba(0,240,255,0.1)',
+                      color: 'var(--neon-cyan)',
+                      border: '1px solid rgba(0,240,255,0.2)',
+                    }}
+                  >
                     {challenge.category}
                   </span>
-                  <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--neon-yellow)' }}>
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.75rem',
+                      color: 'var(--neon-yellow)',
+                    }}
+                  >
                     +{challenge.points} pts
                   </span>
                 </div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>{challenge.title}</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>
+                  {challenge.title}
+                </h3>
+                <p
+                  style={{
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.85rem',
+                    lineHeight: 1.5,
+                  }}
+                >
                   {challenge.description}
                 </p>
                 {/* Ctrl+Enter hint */}
-                <div style={{ marginTop: '10px', fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  <span style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)', borderRadius: '4px', padding: '1px 6px', color: 'var(--neon-cyan)', marginRight: '4px' }}>
+                <div
+                  style={{
+                    marginTop: '10px',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-muted)',
+                    fontFamily: 'var(--font-mono)',
+                  }}
+                >
+                  <span
+                    style={{
+                      background: 'rgba(0,229,255,0.1)',
+                      border: '1px solid rgba(0,229,255,0.3)',
+                      borderRadius: '4px',
+                      padding: '1px 6px',
+                      color: 'var(--neon-cyan)',
+                      marginRight: '4px',
+                    }}
+                  >
                     Ctrl+Enter
                   </span>
-                  to submit instantly from the editor
+                  to submit fix from editor
                 </div>
               </div>
 
@@ -254,9 +502,12 @@ function App() {
             {/* Editor + Console grid */}
             <div
               style={{
-                display: 'grid', gridTemplateColumns: '1fr',
-                gridTemplateRows: '1fr auto', gap: '16px',
-                flex: 1, minHeight: '450px',
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gridTemplateRows: '1fr auto',
+                gap: '16px',
+                flex: 1,
+                minHeight: '450px',
               }}
             >
               {/* Monaco editor with diff mode + Ctrl+Enter */}
@@ -268,23 +519,59 @@ function App() {
               />
 
               {/* Console output */}
-              <div className="glass-card" style={{ padding: '16px', minHeight: '100px', maxHeight: '200px', overflow: 'auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+              <div
+                className="glass-card"
+                style={{
+                  padding: '16px',
+                  minHeight: '100px',
+                  maxHeight: '200px',
+                  overflow: 'auto',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginBottom: '8px',
+                  }}
+                >
                   <Terminal size={14} color="var(--neon-green)" />
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      color: 'var(--text-secondary)',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                    }}
+                  >
                     Console
                   </span>
                   {isRunning && (
-                    <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--neon-yellow)', fontFamily: 'var(--font-mono)' }}>
+                    <span
+                      style={{
+                        marginLeft: 'auto',
+                        fontSize: '0.65rem',
+                        color: 'var(--neon-yellow)',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
                       ⏳ running…
                     </span>
                   )}
                 </div>
                 <pre
                   style={{
-                    fontFamily: 'var(--font-mono)', fontSize: '0.8rem',
-                    color: consoleOutput.startsWith('✅') ? 'var(--neon-green)' : consoleOutput.startsWith('❌') ? 'var(--neon-red)' : 'var(--text-primary)',
-                    whiteSpace: 'pre-wrap', margin: 0,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.8rem',
+                    color: consoleOutput.startsWith('✅')
+                      ? 'var(--neon-green)'
+                      : consoleOutput.startsWith('❌')
+                      ? 'var(--neon-red)'
+                      : 'var(--text-primary)',
+                    whiteSpace: 'pre-wrap',
+                    margin: 0,
                   }}
                 >
                   {consoleOutput || '// Run your code to see output...'}
@@ -292,22 +579,75 @@ function App() {
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button className="btn-neon" onClick={() => { setHintOpen(true); play('hint'); }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Lightbulb size={16} /> Hint</span>
+            {/* Action buttons with strict state transitions */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end',
+                flexWrap: 'wrap',
+              }}
+            >
+              {/* Surrender button */}
+              <button
+                className="btn-neon btn-neon-red"
+                onClick={handleOpenSurrender}
+                disabled={submitting}
+                title="Forfeit challenge and reveal solution"
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Flag size={16} /> Surrender
+                </span>
               </button>
-              <button className="btn-neon" onClick={handleRunCode} disabled={isRunning}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Play size={16} /> Run</span>
+
+              {/* Hint button governed by HintStateMachine */}
+              <button
+                className="btn-neon btn-neon-yellow"
+                onClick={handleOpenHint}
+                disabled={hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0}
+                style={{
+                  opacity:
+                    hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0
+                      ? 0.5
+                      : 1,
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Lightbulb size={16} /> Hint ({hintContext.hintsUsed}/{hintContext.maxHints})
+                </span>
               </button>
-              <button className="btn-neon" onClick={() => { resetGame(); play('click'); }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><RotateCcw size={16} /> Reset</span>
+
+              {/* Run Code button with execution lock */}
+              <button
+                className="btn-neon"
+                onClick={handleRunCode}
+                disabled={isRunning}
+                style={{ opacity: isRunning ? 0.5 : 1 }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Play size={16} /> {isRunning ? 'Running...' : 'Run Tests'}
+                </span>
               </button>
+
+              {/* Reset Game button */}
+              <button
+                className="btn-neon"
+                onClick={() => {
+                  resetGame();
+                  play('click');
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <RotateCcw size={16} /> Reset
+                </span>
+              </button>
+
+              {/* Submit Fix button */}
               <button
                 className="btn-neon btn-neon-green"
                 onClick={handleSubmit}
-                disabled={submitting}
-                style={{ opacity: submitting ? 0.5 : 1 }}
+                disabled={submitting || timeRemaining <= 0}
+                style={{ opacity: submitting || timeRemaining <= 0 ? 0.5 : 1 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Send size={16} /> {submitting ? 'Reviewing...' : 'Submit Fix'}
@@ -321,18 +661,23 @@ function App() {
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer
         style={{
-          padding: '12px 24px', borderTop: '1px solid var(--border-subtle)',
-          display: 'flex', justifyContent: 'center',
-          fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)',
+          padding: '12px 24px',
+          borderTop: '1px solid var(--border-subtle)',
+          display: 'flex',
+          justifyContent: 'center',
+          fontSize: '0.7rem',
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono)',
         }}
       >
-        CodeDuel: BugBounty Arena — 100% Client-Side Evaluation
+        CodeDuel: BugBounty Arena — OOP Scoring Engine & Calendar Streak System
       </footer>
 
-      {/* ── Modals ──────────────────────────────────────────────────────── */}
-      <VictoryModal />
-      <DefeatModal />
+      {/* ── Modals with State Machine Connections ────────────────────────── */}
+      <VictoryModal onNextChallenge={handleNewChallenge} />
+      <DefeatModal onNextChallenge={handleNewChallenge} />
       <HintModal open={hintOpen} onClose={() => setHintOpen(false)} />
+      <SurrenderModal open={surrenderOpen} onClose={() => setSurrenderOpen(false)} />
     </div>
   );
 }
