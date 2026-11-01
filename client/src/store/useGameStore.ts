@@ -1,3 +1,10 @@
+/**
+ * @file useGameStore.ts
+ * @description Centralized Zustand state management store for CodeDuel: BugBounty Arena.
+ * Coordinates reactive game phases, Monaco editor state, arcade countdown timers,
+ * progressive hint state machines, daily calendar streaks, and scoring strategy breakdowns.
+ */
+
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import {
@@ -17,10 +24,9 @@ import {
 } from '@/core/state/HintStateMachine';
 import { GameActionMachine } from '@/core/state/GameActionMachine';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+/**
+ * Challenge specification schema.
+ */
 export interface Challenge {
   id: string;
   title: string;
@@ -37,6 +43,9 @@ export interface Challenge {
   points: number;
 }
 
+/**
+ * Code evaluation review result delivered from automated review services.
+ */
 export interface GameReview {
   correct: boolean;
   score: number;
@@ -46,6 +55,9 @@ export interface GameReview {
   scoreBreakdown?: ScoreBreakdown;
 }
 
+/**
+ * Valid phases of the arena game lifecycle.
+ */
 export type GamePhase =
   | 'idle'
   | 'loading'
@@ -54,15 +66,18 @@ export type GamePhase =
   | 'victory'
   | 'defeat';
 
+/**
+ * Global game state model and action dispatcher signatures.
+ */
 export interface GameState {
   // Current game phase
   phase: GamePhase;
 
-  // Active challenge
+  // Active challenge state
   challenge: Challenge | null;
   playerCode: string;
 
-  // Scoring
+  // Scoring and progression
   score: number;
   combo: number;
   maxCombo: number;
@@ -71,16 +86,16 @@ export interface GameState {
   challengeAttempts: number;
   lastScoreBreakdown: ScoreBreakdown | null;
 
-  // Calendar Streak Record (StreakManager)
+  // Daily calendar streak metrics
   streakRecord: StreakRecord;
   currentStreak: number;
   highestStreak: number;
 
-  // Timer
+  // Countdown timer state
   timeRemaining: number;
   timerActive: boolean;
 
-  // Hints & State Machine
+  // Progressive hint state machine
   hintsUsed: number;
   currentHintLevel: number;
   hintContext: HintMachineContext;
@@ -88,22 +103,17 @@ export interface GameState {
   // Review result
   review: GameReview | null;
 
-  // Error state
+  // Error messaging state
   actionError: string | null;
 
-  // Settings
+  // User preferences and visual flags
   difficulty: 'easy' | 'medium' | 'hard';
   soundEnabled: boolean;
-
-  // Phase 2 — UI state
-  /** Toggle diff view: compare buggy vs player code side-by-side */
   showDiff: boolean;
-  /** CRT scanline + chromatic aberration overlay */
   crtEnabled: boolean;
-  /** Momentary flag for screen-shake on wrong answer */
   screenShake: boolean;
 
-  // Actions
+  // Store actions
   setPhase: (phase: GamePhase) => void;
   setChallenge: (challenge: Challenge) => void;
   setPlayerCode: (code: string) => void;
@@ -126,19 +136,19 @@ export interface GameState {
   incrementCombo: () => void;
   setDifficulty: (d: 'easy' | 'medium' | 'hard') => void;
   toggleSound: () => void;
-  // Phase 2 actions
   toggleDiff: () => void;
   toggleCRT: () => void;
   triggerScreenShake: () => void;
   resetGame: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Streak Persistence Helper
-// ---------------------------------------------------------------------------
-
 const STREAK_STORAGE_KEY = 'codeduel_bugbounty_streak_v1';
 
+/**
+ * Loads serialized streak record from browser localStorage.
+ *
+ * @returns Parsed StreakRecord or clean initial record.
+ */
 function loadStoredStreak(): StreakRecord {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -159,6 +169,11 @@ function loadStoredStreak(): StreakRecord {
   return StreakManager.createInitialRecord();
 }
 
+/**
+ * Persists serialized streak record to browser localStorage.
+ *
+ * @param record Active streak record to save.
+ */
 function saveStoredStreak(record: StreakRecord): void {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -169,16 +184,12 @@ function saveStoredStreak(record: StreakRecord): void {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Store
-// ---------------------------------------------------------------------------
-
 const initialStreak = loadStoredStreak();
 const scoreCalculator = new ScoreCalculator(new ArcadeScoringStrategy());
 
 export const useGameStore = create<GameState>()(
   subscribeWithSelector((set, get) => ({
-    // ── Initial state ──────────────────────────────────────────────────────
+    // Initial state
     phase: 'idle',
     challenge: null,
     playerCode: '',
@@ -209,7 +220,7 @@ export const useGameStore = create<GameState>()(
     crtEnabled: true,
     screenShake: false,
 
-    // ── Actions ────────────────────────────────────────────────────────────
+    // Actions
     setPhase: (phase) => set({ phase, actionError: null }),
 
     clearActionError: () => set({ actionError: null }),
@@ -418,7 +429,6 @@ export const useGameStore = create<GameState>()(
 
     toggleCRT: () => set((s) => ({ crtEnabled: !s.crtEnabled })),
 
-    /** Pulse screenShake true for 500 ms then reset — triggers CSS animation */
     triggerScreenShake: () => {
       set({ screenShake: true });
       setTimeout(() => set({ screenShake: false }), 500);
@@ -440,7 +450,6 @@ export const useGameStore = create<GameState>()(
         challengeAttempts: 0,
         lastScoreBreakdown: null,
         actionError: null,
-        // streakRecord & preferences intentionally preserved
       }),
   }))
 );

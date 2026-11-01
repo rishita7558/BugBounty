@@ -1,12 +1,17 @@
+/**
+ * @file useArcadeTimer.ts
+ * @description High-precision requestAnimationFrame-based countdown timer hook.
+ * Avoids setInterval browser tab throttling and accumulator drift by calculating elapsed
+ * high-resolution timestamps directly from RAF execution ticks.
+ */
+
 import { useCallback, useRef, useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 
-// ---------------------------------------------------------------------------
-// High-Precision Arcade Timer Hook
-// Uses requestAnimationFrame for smooth 1-second ticks without drift.
-// ---------------------------------------------------------------------------
-
-export function useArcadeTimer() {
+/**
+ * Custom React hook driving the active challenge countdown clock.
+ */
+export function useArcadeTimer(): void {
   const tickTimer = useGameStore((s) => s.tickTimer);
   const timerActive = useGameStore((s) => s.timerActive);
   const lastTickRef = useRef<number>(0);

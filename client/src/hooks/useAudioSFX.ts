@@ -1,20 +1,38 @@
+/**
+ * @file useAudioSFX.ts
+ * @description Procedural sound synthesis engine built on the Web Audio API.
+ * Synthesizes 8-bit retro arcade tones, celebration arpeggios, ticks, and error buzzers
+ * in real time without external audio file dependencies.
+ */
+
 import { useCallback, useRef } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 
-// ---------------------------------------------------------------------------
-// Web Audio API — Procedural Sound Synthesis Engine
-// No pre-recorded files needed. Generates retro arcade sounds on the fly.
-// ---------------------------------------------------------------------------
+export type SoundType =
+  | 'correct'
+  | 'wrong'
+  | 'combo'
+  | 'tick'
+  | 'hint'
+  | 'gameover'
+  | 'start'
+  | 'click'
+  | 'keypress';
 
-type SoundType = 'correct' | 'wrong' | 'combo' | 'tick' | 'hint' | 'gameover' | 'start' | 'click' | 'keypress';
-
+/**
+ * Custom React hook for synthesizing procedural retro sound effects.
+ *
+ * @returns Interface exposing the play method and individual tone generators.
+ */
 export function useAudioSFX() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const soundEnabled = useGameStore((s) => s.soundEnabled);
 
   const getCtx = useCallback(() => {
     if (!audioCtxRef.current) {
-      const AudioCtxClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtxClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       audioCtxRef.current = new AudioCtxClass();
     }
     if (audioCtxRef.current.state === 'suspended') {
@@ -23,24 +41,37 @@ export function useAudioSFX() {
     return audioCtxRef.current;
   }, []);
 
-  const playTone = useCallback((freq: number, type: OscillatorType, duration: number, startDelay = 0, gainLevel = 0.15) => {
-    if (!soundEnabled) return;
-    const ctx = getCtx();
-    const startTime = ctx.currentTime + startDelay;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+  const playTone = useCallback(
+    (
+      freq: number,
+      type: OscillatorType,
+      duration: number,
+      startDelay = 0,
+      gainLevel = 0.15
+    ) => {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getCtx();
+        const startTime = ctx.currentTime + startDelay;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
-    gain.gain.setValueAtTime(gainLevel, startTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(gainLevel, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
 
-    osc.start(startTime);
-    osc.stop(startTime + duration);
-  }, [soundEnabled, getCtx]);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      } catch (err) {
+        console.warn('[useAudioSFX] Audio synthesis warning:', err);
+      }
+    },
+    [soundEnabled, getCtx]
+  );
 
   const playKeyClick = useCallback(() => {
     playTone(800, 'triangle', 0.04, 0, 0.06);

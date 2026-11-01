@@ -1,13 +1,14 @@
+/**
+ * @file llm.service.ts
+ * @description Generative AI and automated code analysis service gateway.
+ * Implements provider abstraction (Google Gemini and OpenAI), strict JSON schema extraction,
+ * and deterministic offline fallbacks for continuous gameplay when external APIs are unreachable.
+ */
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 
-// ---------------------------------------------------------------------------
-// LLM Service — Minimal Node.js Proxy & Strict JSON Response Schema Pipeline
-// Directs requests to Gemini (gemini-1.5-flash) or OpenAI with schema enforcement.
-// ---------------------------------------------------------------------------
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-// Use gemini-2.5-flash (active on 2026 Gemini API endpoint for this key)
 const LIVE_MODEL_NAME = 'gemini-2.5-flash';
 const geminiModel = genAI.getGenerativeModel({
   model: LIVE_MODEL_NAME,
@@ -19,6 +20,11 @@ const geminiModel = genAI.getGenerativeModel({
 
 type LLMProvider = 'gemini' | 'openai';
 
+/**
+ * Resolves the active generative provider based on environment credentials.
+ *
+ * @returns Object with provider identifier and active API credential key.
+ */
 function getProvider(): { provider: LLMProvider; key: string } {
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -33,7 +39,12 @@ function getProvider(): { provider: LLMProvider; key: string } {
 }
 
 /**
- * Strict JSON extractor & parser for LLM responses.
+ * Strict JSON extractor and parser for model text responses.
+ *
+ * @template T Expected return type.
+ * @param text Raw model output containing JSON or Markdown-fenced JSON.
+ * @returns Parsed object payload.
+ * @throws {Error} When content cannot be parsed as valid JSON.
  */
 function safeParseJSON<T = any>(text: string): T {
   let cleaned = text.trim();
@@ -60,7 +71,8 @@ function safeParseJSON<T = any>(text: string): T {
 }
 
 /**
- * Fallback curated challenges used if API keys are exhausted, rate-limited, or offline.
+ * Curated offline fallback challenges indexed by difficulty tier.
+ * Used when API keys are unconfigured, rate-limited, or network connectivity is severed.
  */
 const FALLBACK_CHALLENGES: Record<string, any[]> = {
   easy: [
@@ -195,8 +207,11 @@ const FALLBACK_CHALLENGES: Record<string, any[]> = {
 };
 
 /**
- * 3.1 Strict LLM Service Function: generateBugChallenge
- * Uses strict JSON response schema to force the LLM to return valid parseable bug challenges.
+ * Generates a debugging challenge with strict JSON schema compliance.
+ *
+ * @param difficulty Target challenge difficulty tier.
+ * @param language Target programming language.
+ * @returns Parsed challenge data object.
  */
 export const generateBugChallenge = async (difficulty = 'medium', language = 'javascript') => {
   const prompt = `Generate a realistic buggy code challenge in ${language} at ${difficulty} level.
@@ -223,12 +238,16 @@ Return ONLY a valid JSON object matching this schema:
 };
 
 /**
- * General LLM query helper for challenges, reviews, and hints.
+ * Executes a generative query against the configured provider with automatic offline fallback.
+ *
+ * @param systemPrompt System instructions specifying output schemas and evaluation criteria.
+ * @param userPrompt User prompt containing context, submitted code, or challenge parameters.
+ * @returns Parsed JSON evaluation or fallback response.
  */
 export async function queryLLM(systemPrompt: string, userPrompt: string): Promise<any> {
   const { provider, key } = getProvider();
 
-  // Gemini pipeline
+  // Gemini generative pipeline
   if (provider === 'gemini' && key) {
     try {
       const model = genAI.getGenerativeModel({
@@ -248,7 +267,7 @@ export async function queryLLM(systemPrompt: string, userPrompt: string): Promis
     }
   }
 
-  // OpenAI pipeline
+  // OpenAI chat completion pipeline
   if (provider === 'openai' && key) {
     try {
       const openai = new OpenAI({ apiKey: key });
@@ -269,7 +288,7 @@ export async function queryLLM(systemPrompt: string, userPrompt: string): Promis
     }
   }
 
-  // Graceful fallback heuristics for reviews / hints if API keys unavailable or exhausted
+  // Deterministic fallbacks for evaluation reviews and hints when external services are unavailable
   if (systemPrompt.includes('code review') || userPrompt.includes('Evaluate the fix')) {
     return {
       correct: true,

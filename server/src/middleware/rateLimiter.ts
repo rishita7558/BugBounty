@@ -1,12 +1,18 @@
+/**
+ * @file rateLimiter.ts
+ * @description IP-based rate limiting middleware configurations using express-rate-limit.
+ * Protects generative challenge and review endpoints from quota exhaustion and denial-of-service attempts.
+ */
+
 import rateLimit from 'express-rate-limit';
 
 /**
- * Rate limiter for LLM API endpoints.
- * Prevents abuse by limiting requests per IP window (30 requests per 15 minutes per IP).
+ * Rate limiter middleware for intensive computational and generative proxy endpoints.
+ * Restricts client IP addresses to 30 requests per 15-minute sliding window.
  */
 export const llmRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,   // 15 minutes window
-  max: 30,                    // 30 requests per 15 minutes per IP
+  windowMs: 15 * 60 * 1000,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -16,7 +22,8 @@ export const llmRateLimiter = rateLimit({
 });
 
 /**
- * General rate limiter for health/misc endpoints.
+ * General rate limiter middleware for health check and game validation endpoints.
+ * Restricts client IP addresses to 150 requests per 15-minute sliding window.
  */
 export const generalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

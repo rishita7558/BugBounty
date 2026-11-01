@@ -1,3 +1,10 @@
+/**
+ * @file VictoryModal.tsx
+ * @description Celebratory modal dialog presented upon successfully resolving a bug challenge.
+ * Displays particle confetti, itemized OOP scoring breakdowns, daily streak updates,
+ * automatically persists progress to IndexedDB (Dexie), and opens printable arcade ticket redemption.
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import confetti from 'canvas-confetti';
@@ -16,15 +23,20 @@ import {
   Play,
 } from 'lucide-react';
 
-// ---------------------------------------------------------------------------
-// Victory Modal — Shows OOP Strategy Score Breakdown & Calendar Streak
-// Automatically persists progress to Dexie.js and provides printable tickets.
-// ---------------------------------------------------------------------------
-
-interface VictoryModalProps {
+/**
+ * Properties accepted by the VictoryModal component.
+ */
+export interface VictoryModalProps {
+  /** Optional callback to advance directly to generating the next challenge. */
   onNextChallenge?: () => void;
 }
 
+/**
+ * VictoryModal component displaying score breakdown and persistence confirmations.
+ *
+ * @param props Component properties.
+ * @returns Rendered victory overlay or null if not in victory phase.
+ */
 export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
   const phase = useGameStore((s) => s.phase);
   const review = useGameStore((s) => s.review);
@@ -44,7 +56,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
 
   useEffect(() => {
     if (phase === 'victory' && review && challenge) {
-      // Trigger confetti once
+      // Trigger confetti celebration once per victory
       if (!confettiFiredRef.current) {
         confettiFiredRef.current = true;
         confetti({
@@ -55,7 +67,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
         });
       }
 
-      // Persist to Dexie IndexedDB once per solve
+      // Persist to Dexie IndexedDB once per solved challenge
       if (recordedRef.current !== challenge.id) {
         recordedRef.current = challenge.id;
         const timeSpent = Math.max(1, (challenge.timeLimit || 120) - timeRemaining);
@@ -74,7 +86,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
           solvedAt: new Date(),
         }).catch((err) => console.error('Failed to record solve to Dexie:', err));
 
-        // Prepare printable ticket
+        // Prepare printable ticket data
         getPlayerProfile().then((profile) => {
           setTicketData({
             ticketId: Math.random().toString(36).substring(2, 8).toUpperCase(),
@@ -132,7 +144,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
             overflowY: 'auto',
           }}
         >
-          {/* Title */}
+          {/* Title banner */}
           <div
             className="arcade-text neon-text-green"
             style={{ fontSize: '1.25rem', marginBottom: '6px' }}
@@ -149,7 +161,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
             {challenge?.title}
           </div>
 
-          {/* Top Badges: Score & Streak */}
+          {/* Performance badges summary */}
           <div
             style={{
               display: 'grid',
@@ -217,7 +229,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
             </div>
           </div>
 
-          {/* Itemized OOP Score Engine Breakdown */}
+          {/* Itemized scoring engine breakdown */}
           {breakdown && (
             <div
               style={{
@@ -240,7 +252,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                   letterSpacing: '1px',
                 }}
               >
-                📊 SCORING ENGINE BREAKDOWN (SRP STRATEGY)
+                📊 SCORING ENGINE BREAKDOWN
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -306,8 +318,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                         gap: '6px',
                       }}
                     >
-                      <Flame size={13} color="var(--neon-yellow)" /> Streak
-                      Multiplier:
+                      <Flame size={13} color="var(--neon-yellow)" /> Streak Multiplier:
                     </span>
                     <span style={{ color: 'var(--neon-yellow)', fontWeight: 600 }}>
                       ×{breakdown.streakMultiplier.toFixed(1)}
@@ -325,8 +336,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                         gap: '6px',
                       }}
                     >
-                      <Zap size={13} color="var(--neon-magenta)" /> First Attempt
-                      Bonus:
+                      <Zap size={13} color="var(--neon-magenta)" /> First Attempt Bonus:
                     </span>
                     <span style={{ color: 'var(--neon-magenta)', fontWeight: 600 }}>
                       +{breakdown.firstAttemptBonus}
@@ -355,7 +365,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
             </div>
           )}
 
-          {/* Feedback from LLM/Engine */}
+          {/* Feedback summary */}
           <div
             style={{
               background: 'var(--bg-tertiary)',
@@ -372,7 +382,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
             {review.feedback}
           </div>
 
-          {/* Persistence badge */}
+          {/* Persistence status notice */}
           <div
             style={{
               fontSize: '0.65rem',
@@ -384,7 +394,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
             ✓ Persisted to Dexie.js IndexedDB • Streak incremented
           </div>
 
-          {/* Overall Total */}
+          {/* Overall career score */}
           <div
             style={{
               marginBottom: '20px',
@@ -398,7 +408,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
             </span>
           </div>
 
-          {/* Actions */}
+          {/* Action triggers */}
           <div
             style={{
               display: 'flex',

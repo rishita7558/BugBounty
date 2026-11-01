@@ -1,17 +1,34 @@
-// client/src/core/services/StreakManager.ts
+/**
+ * @file StreakManager.ts
+ * @description Calendar-day streak calculation service.
+ * Normalizes timestamps to midnight boundaries to deterministically distinguish between
+ * multiple same-day solves, consecutive-day progressions, and lapsed streaks across timezones.
+ */
 
+/**
+ * State record storing player streak progression.
+ */
 export interface StreakRecord {
+  /** Current active consecutive calendar-day streak. */
   currentStreak: number;
+  /** All-time highest calendar-day streak achieved. */
   highestStreak: number;
+  /** Cumulative total of all challenges solved. */
   totalSolved: number;
-  lastSolvedTimestamp: number | null; // Unix epoch ms
+  /** Unix epoch timestamp (ms) of the most recently verified solve. */
+  lastSolvedTimestamp: number | null;
 }
 
+/**
+ * Manager handling deterministic calendar-day streak transitions.
+ */
 export class StreakManager {
-  private static MS_PER_DAY = 1000 * 60 * 60 * 24;
+  private static readonly MS_PER_DAY = 1000 * 60 * 60 * 24;
 
   /**
-   * Factory method to create a clean initial streak record.
+   * Factory method creating a clean initial streak record.
+   *
+   * @returns Initialized streak record.
    */
   public static createInitialRecord(): StreakRecord {
     return {
@@ -23,8 +40,12 @@ export class StreakManager {
   }
 
   /**
-   * Updates streak and solved problem counts on a verified solve.
-   * Uses local calendar-day boundary normalization (midnight to 23:59:59).
+   * Updates streak and solved challenge metrics upon completing a challenge.
+   * Uses local midnight normalization to evaluate the calendar-day delta.
+   *
+   * @param currentRecord The existing streak record.
+   * @param solveDate Timestamp of the verified solve (defaults to current time).
+   * @returns Updated streak record.
    */
   public static updateStreakOnSolve(
     currentRecord: StreakRecord,
@@ -60,7 +81,7 @@ export class StreakManager {
     );
 
     if (dayDifference === 0) {
-      // Solved another problem on the same calendar day: streak unchanged
+      // Solved another challenge on the same calendar day: streak count remains unchanged
       return {
         ...currentRecord,
         totalSolved,
@@ -76,7 +97,7 @@ export class StreakManager {
         lastSolvedTimestamp: solveDate.getTime(),
       };
     } else if (dayDifference > 1) {
-      // Day gap > 1: streak broken, reset to 1
+      // Missed day boundary: streak broken and resets to 1
       return {
         currentStreak: 1,
         highestStreak: currentRecord.highestStreak,
@@ -84,8 +105,7 @@ export class StreakManager {
         lastSolvedTimestamp: solveDate.getTime(),
       };
     } else {
-      // Negative day difference (clock skew/re-ordered solve date)
-      // Keep streak unchanged, update totalSolved and latest timestamp
+      // Clock skew or out-of-order solve timestamp: preserve streak and update latest timestamp
       return {
         ...currentRecord,
         totalSolved,
@@ -98,8 +118,11 @@ export class StreakManager {
   }
 
   /**
-   * Checks if the streak is still alive today or eligible to continue.
-   * True if solved today (dayDiff=0) or yesterday (dayDiff=1).
+   * Verifies whether the streak is currently alive or eligible for continuation.
+   *
+   * @param record The player streak record.
+   * @param checkDate Comparison date (defaults to current time).
+   * @returns True if solved today or yesterday.
    */
   public static isStreakActive(
     record: StreakRecord,
@@ -126,8 +149,11 @@ export class StreakManager {
   }
 
   /**
-   * Returns current active streak count. If more than 1 day has passed without
-   * solving, the active streak has lapsed and reports 0 until resumed.
+   * Computes the effective streak count accounting for elapsed inactive days.
+   *
+   * @param record The player streak record.
+   * @param checkDate Comparison date (defaults to current time).
+   * @returns Effective streak number (returns 0 if streak has lapsed).
    */
   public static getEffectiveStreak(
     record: StreakRecord,
@@ -137,4 +163,3 @@ export class StreakManager {
     return this.isStreakActive(record, checkDate) ? record.currentStreak : 0;
   }
 }
-

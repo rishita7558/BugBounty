@@ -1,12 +1,16 @@
+/**
+ * @file ticketGenerator.ts
+ * @description Document rasterization and ticket export utility using html2canvas and jsPDF.
+ * Serializes celebratory victory DOM elements into high-resolution printable PDF vouchers,
+ * PNG image assets, or physical browser print streams.
+ */
+
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-// ---------------------------------------------------------------------------
-// Printable Retro Arcade Ticket Generator
-// Serializes celebratory victory DOM elements into high-res PDF or PNG tickets
-// using html2canvas and jsPDF.
-// ---------------------------------------------------------------------------
-
+/**
+ * Metadata parameters rendered onto the printable arcade ticket voucher.
+ */
 export interface BountyTicketData {
   ticketId: string;
   callsign: string;
@@ -19,7 +23,10 @@ export interface BountyTicketData {
 }
 
 /**
- * Generate a printable PDF arcade bounty ticket from an HTML element.
+ * Generates and triggers the download of a printable PDF arcade bounty ticket from a DOM element.
+ *
+ * @param element The container HTML element to rasterize.
+ * @param filename File name for the downloaded PDF asset.
  */
 export async function downloadTicketAsPdf(
   element: HTMLElement,
@@ -47,7 +54,10 @@ export async function downloadTicketAsPdf(
 }
 
 /**
- * Export high-resolution PNG image of the arcade ticket.
+ * Exports a high-resolution PNG image asset of the rendered ticket element.
+ *
+ * @param element The container HTML element to rasterize.
+ * @param filename File name for the downloaded PNG image.
  */
 export async function downloadTicketAsImage(
   element: HTMLElement,
@@ -67,7 +77,7 @@ export async function downloadTicketAsImage(
 }
 
 /**
- * Trigger standard browser print dialog for physical printer ticket output.
+ * Triggers the browser print dialog to print the active ticket directly.
  */
 export function printTicketDirectly(): void {
   window.print();

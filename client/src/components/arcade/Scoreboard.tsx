@@ -1,12 +1,19 @@
+/**
+ * @file Scoreboard.tsx
+ * @description Header statistics bar for CodeDuel: BugBounty Arena.
+ * Displays cumulative player score, active combo multiplier, solved challenge totals,
+ * and current versus all-time high calendar-day streak metrics.
+ */
+
 import { useGameStore } from '@/store/useGameStore';
 import { formatScore } from '@/lib/utils';
 import { Flame, CheckCircle, Trophy } from 'lucide-react';
 
-// ---------------------------------------------------------------------------
-// Scoreboard — Displays score, combo multiplier, calendar streak, and solved count
-// Strict differentiation between total problems solved and daily calendar streak.
-// ---------------------------------------------------------------------------
-
+/**
+ * Scoreboard component presenting vital player performance metrics.
+ *
+ * @returns Rendered scoreboard statistics bar.
+ */
 export function Scoreboard() {
   const score = useGameStore((s) => s.score);
   const combo = useGameStore((s) => s.combo);
@@ -27,7 +34,7 @@ export function Scoreboard() {
         flexWrap: 'wrap',
       }}
     >
-      {/* Score */}
+      {/* Score metric */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <span
           className="arcade-text"
@@ -43,7 +50,7 @@ export function Scoreboard() {
         </span>
       </div>
 
-      {/* Combo */}
+      {/* Combo multiplier display */}
       {combo > 0 && (
         <div
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
@@ -70,7 +77,7 @@ export function Scoreboard() {
         </div>
       )}
 
-      {/* Stats Cluster: Solved vs Calendar Streak vs Best */}
+      {/* Statistics cluster: Solved problems vs Calendar-day streak vs Record */}
       <div
         style={{
           display: 'flex',
@@ -81,7 +88,7 @@ export function Scoreboard() {
           fontFamily: 'var(--font-mono)',
         }}
       >
-        {/* Total Solved Problems */}
+        {/* Total solved challenges count */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <CheckCircle size={13} color="var(--neon-green)" />
@@ -92,7 +99,7 @@ export function Scoreboard() {
           <span style={{ fontSize: '0.55rem', letterSpacing: '1px' }}>SOLVED</span>
         </div>
 
-        {/* Daily Calendar Streak */}
+        {/* Current consecutive calendar-day streak */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
             <Flame size={14} color="var(--neon-yellow)" />
@@ -103,7 +110,7 @@ export function Scoreboard() {
           <span style={{ fontSize: '0.55rem', letterSpacing: '1px' }}>STREAK</span>
         </div>
 
-        {/* Best Streak */}
+        {/* Highest recorded calendar-day streak */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
             <Trophy size={13} color="var(--neon-cyan)" />

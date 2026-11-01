@@ -1,12 +1,20 @@
+/**
+ * @file CodeEditor.tsx
+ * @description Monaco code editor integration with custom retro cyberpunk syntax theming.
+ * Provides live code editing, side-by-side diff comparison against original buggy code,
+ * bracket colorization, and keyboard shortcuts (Ctrl/Cmd+Enter) for submission.
+ */
+
 import Editor, { DiffEditor, type OnMount } from '@monaco-editor/react';
 import { useGameStore } from '@/store/useGameStore';
 
-// ---------------------------------------------------------------------------
-// Cyberpunk Monaco Theme — registered once on first editor mount
-// ---------------------------------------------------------------------------
-
 let themeRegistered = false;
 
+/**
+ * Registers the custom cyberpunk editor color theme with Monaco.
+ *
+ * @param monaco The Monaco global namespace object.
+ */
 function registerCyberpunkTheme(monaco: any) {
   if (themeRegistered) return;
   monaco.editor.defineTheme('cyberpunk', {
@@ -71,10 +79,6 @@ function registerCyberpunkTheme(monaco: any) {
   themeRegistered = true;
 }
 
-// ---------------------------------------------------------------------------
-// Shared editor options
-// ---------------------------------------------------------------------------
-
 const EDITOR_OPTIONS = {
   fontSize:                  14,
   fontFamily:                "'JetBrains Mono', 'Fira Code', monospace",
@@ -97,30 +101,39 @@ const EDITOR_OPTIONS = {
   glyphMargin:               false,
 };
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-interface CodeEditorProps {
-  showDiff?:      boolean;
-  onToggleDiff?:  () => void;
-  onSubmit?:      () => void;
-  originalCode?:  string;
+/**
+ * Properties accepted by the CodeEditor component.
+ */
+export interface CodeEditorProps {
+  /** Whether side-by-side diff view is currently enabled. */
+  showDiff?: boolean;
+  /** Callback to toggle diff comparison view. */
+  onToggleDiff?: () => void;
+  /** Callback fired when the player triggers solution submission. */
+  onSubmit?: () => void;
+  /** Original buggy code snippet used for diff comparisons. */
+  originalCode?: string;
 }
 
+/**
+ * CodeEditor component encapsulating Monaco single-file and diff editors.
+ *
+ * @param props Component properties.
+ * @returns Rendered Monaco editor workspace.
+ */
 export function CodeEditor({
-  showDiff     = false,
+  showDiff = false,
   onToggleDiff,
   onSubmit,
   originalCode = '',
 }: CodeEditorProps) {
-  const playerCode    = useGameStore((s) => s.playerCode);
+  const playerCode = useGameStore((s) => s.playerCode);
   const setPlayerCode = useGameStore((s) => s.setPlayerCode);
-  const phase         = useGameStore((s) => s.phase);
+  const phase = useGameStore((s) => s.phase);
 
   const isReadOnly = phase !== 'playing' && phase !== 'reviewing';
 
-  // Register theme & bind Ctrl+Enter on editor mount
+  // Register theme and attach submission keybinding
   const handleMount: OnMount = (editor, monaco) => {
     registerCyberpunkTheme(monaco);
     monaco.editor.setTheme('cyberpunk');
@@ -130,7 +143,7 @@ export function CodeEditor({
     );
   };
 
-  // DiffEditor mount — only needs theme
+  // DiffEditor mounting callback
   const handleDiffMount = (_: any, monaco: any) => {
     registerCyberpunkTheme(monaco);
     monaco.editor.setTheme('cyberpunk');

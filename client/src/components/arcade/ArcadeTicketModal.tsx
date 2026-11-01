@@ -1,13 +1,37 @@
+/**
+ * @file ArcadeTicketModal.tsx
+ * @description Modal dialog presenting a printable retro arcade bounty ticket.
+ * Renders ticket data including challenge metadata, operator callsign, score breakdown,
+ * and barcode styling, with PDF, PNG, and direct browser print export capabilities.
+ */
+
 import { useRef, useState } from 'react';
-import { downloadTicketAsPdf, downloadTicketAsImage, printTicketDirectly, type BountyTicketData } from '@/lib/ticketGenerator';
+import {
+  downloadTicketAsPdf,
+  downloadTicketAsImage,
+  printTicketDirectly,
+  type BountyTicketData,
+} from '@/lib/ticketGenerator';
 import { Printer, Download, Image as ImageIcon, X, Check, Award } from 'lucide-react';
 
-interface ArcadeTicketModalProps {
+/**
+ * Properties accepted by the ArcadeTicketModal component.
+ */
+export interface ArcadeTicketModalProps {
+  /** Whether the modal dialog is currently visible. */
   open: boolean;
+  /** Callback fired when the player closes the modal. */
   onClose: () => void;
+  /** Structured ticket data containing score, operator, and challenge details. */
   data: BountyTicketData;
 }
 
+/**
+ * ArcadeTicketModal component for generating and downloading celebratory physical tickets.
+ *
+ * @param props Component properties.
+ * @returns Rendered modal overlay or null if closed.
+ */
 export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProps) {
   const ticketRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);

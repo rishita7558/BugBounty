@@ -1,11 +1,15 @@
+/**
+ * @file db.ts
+ * @description Client-side persistence engine leveraging IndexedDB via Dexie.js.
+ * Manages player profiles, unlocked hacker badges, career scores, and solved challenge archives
+ * without requiring server-side database infrastructure.
+ */
+
 import Dexie, { type Table } from 'dexie';
 
-// ---------------------------------------------------------------------------
-// Dexie.js IndexedDB Schema — Zero-Database Client Persistence Engine
-// All user progression, bug bounty points, custom code snippets,
-// and unlockable hacker badges reside directly in the client browser.
-// ---------------------------------------------------------------------------
-
+/**
+ * Record representing a successfully resolved bug challenge.
+ */
 export interface SolvedChallenge {
   id: string;
   title: string;
@@ -16,6 +20,9 @@ export interface SolvedChallenge {
   solvedAt: Date;
 }
 
+/**
+ * Persistent profile record for the local player.
+ */
 export interface PlayerProfile {
   id: string;
   callsign: string;
@@ -24,6 +31,9 @@ export interface PlayerProfile {
   unlockedBadges: string[];
 }
 
+/**
+ * High score leaderboard entry record.
+ */
 export interface HighScore {
   id?: number;
   playerName: string;
@@ -34,6 +44,9 @@ export interface HighScore {
   timestamp: number;
 }
 
+/**
+ * Historical challenge execution record.
+ */
 export interface RunHistory {
   id?: number;
   challengeId: string;
@@ -45,6 +58,9 @@ export interface RunHistory {
   timestamp: number;
 }
 
+/**
+ * Unlockable player achievement badge record.
+ */
 export interface Badge {
   id?: number;
   name: string;
@@ -53,6 +69,9 @@ export interface Badge {
   unlockedAt: number;
 }
 
+/**
+ * Dexie database class declaring local table schemas.
+ */
 export class CodeDuelDatabase extends Dexie {
   solvedChallenges!: Table<SolvedChallenge, string>;
   profile!: Table<PlayerProfile, string>;
@@ -74,12 +93,12 @@ export class CodeDuelDatabase extends Dexie {
 
 export const db = new CodeDuelDatabase();
 
-// ── Profile CRUD Operations ───────────────────────────────────────────────
-
 const DEFAULT_PROFILE_ID = 'local-player';
 
 /**
- * Get or initialize the player's local profile.
+ * Retrieves the local player profile, initializing defaults if none exists.
+ *
+ * @returns Active PlayerProfile record.
  */
 export async function getPlayerProfile(): Promise<PlayerProfile> {
   const existing = await db.profile.get(DEFAULT_PROFILE_ID);
@@ -97,7 +116,10 @@ export async function getPlayerProfile(): Promise<PlayerProfile> {
 }
 
 /**
- * Update player profile fields (callsign, score, streak, badges).
+ * Updates properties on the active player profile.
+ *
+ * @param updates Partial fields to apply to the profile.
+ * @returns Updated PlayerProfile record.
  */
 export async function updatePlayerProfile(updates: Partial<PlayerProfile>): Promise<PlayerProfile> {
   const current = await getPlayerProfile();
@@ -111,7 +133,9 @@ export async function updatePlayerProfile(updates: Partial<PlayerProfile>): Prom
 }
 
 /**
- * Record a successfully squashed bug challenge and update profile points & streak.
+ * Records a completed challenge solve and updates cumulative player points, streaks, and badges.
+ *
+ * @param solved The solved challenge record.
  */
 export async function recordSolvedChallenge(solved: SolvedChallenge): Promise<void> {
   await db.solvedChallenges.put(solved);
@@ -135,7 +159,10 @@ export async function recordSolvedChallenge(solved: SolvedChallenge): Promise<vo
 }
 
 /**
- * Retrieve all solved challenges, sorted newest first.
+ * Retrieves solved challenges ordered by most recently completed.
+ *
+ * @param limit Maximum records to return.
+ * @returns Array of solved challenge records.
  */
 export async function getSolvedChallenges(limit = 50): Promise<SolvedChallenge[]> {
   const all = await db.solvedChallenges.toArray();
@@ -145,36 +172,69 @@ export async function getSolvedChallenges(limit = 50): Promise<SolvedChallenge[]
 }
 
 /**
- * Reset current player streak on defeat.
+ * Resets the current consecutive player streak on defeat or forfeiture.
  */
 export async function resetPlayerStreak(): Promise<void> {
   await updatePlayerProfile({ currentStreak: 0 });
 }
 
-// ── Backwards Compatible Repository Queries ───────────────────────────────
-
+/**
+ * Retrieves high scores sorted descending by score value.
+ *
+ * @param limit Maximum leaderboard entries to return.
+ * @returns Array of HighScore records.
+ */
 export async function getTopScores(limit = 10): Promise<HighScore[]> {
   return db.highScores.orderBy('score').reverse().limit(limit).toArray();
 }
 
+/**
+ * Persists a new high score entry.
+ *
+ * @param entry The high score data to store.
+ * @returns Primary key identifier of the inserted record.
+ */
 export async function saveHighScore(entry: Omit<HighScore, 'id'>): Promise<number> {
   const id = await db.highScores.add(entry as HighScore);
   return id as number;
 }
 
+/**
+ * Retrieves challenge execution history ordered by timestamp.
+ *
+ * @param limit Maximum records to return.
+ * @returns Array of RunHistory records.
+ */
 export async function getRunHistory(limit = 50): Promise<RunHistory[]> {
   return db.runHistory.orderBy('timestamp').reverse().limit(limit).toArray();
 }
 
+/**
+ * Records a challenge execution run.
+ *
+ * @param entry The execution history entry to store.
+ * @returns Primary key identifier of the inserted record.
+ */
 export async function saveRun(entry: Omit<RunHistory, 'id'>): Promise<number> {
   const id = await db.runHistory.add(entry as RunHistory);
   return id as number;
 }
 
+/**
+ * Retrieves all unlocked achievement badges.
+ *
+ * @returns Array of Badge records.
+ */
 export async function getUnlockedBadges(): Promise<Badge[]> {
   return db.badges.orderBy('unlockedAt').reverse().toArray();
 }
 
+/**
+ * Unlocks a new achievement badge for the player if not already unlocked.
+ *
+ * @param badge Badge definition to record.
+ * @returns Badge identifier.
+ */
 export async function unlockBadge(badge: Omit<Badge, 'id'>): Promise<number> {
   const exists = await db.badges.where('name').equals(badge.name).first();
   if (exists) return exists.id!;

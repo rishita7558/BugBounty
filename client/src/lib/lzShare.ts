@@ -1,10 +1,15 @@
+/**
+ * @file lzShare.ts
+ * @description Serverless challenge state sharing via URI-encoded LZ-String compression.
+ * Serializes complete challenge definitions, buggy code, assertions, and author callsigns
+ * into portable URL hash fragments without relying on external database storage.
+ */
+
 import LZString from 'lz-string';
 
-// ---------------------------------------------------------------------------
-// State Sharing Hack via URL Compression — 100% Serverless Challenge Link Sharing
-// Zero database footprint: complete challenge payloads are encoded into URL hashes.
-// ---------------------------------------------------------------------------
-
+/**
+ * Challenge payload schema encoded into compressed URL links.
+ */
 export interface ShareableChallengePayload {
   title: string;
   code: string;
@@ -17,7 +22,10 @@ export interface ShareableChallengePayload {
 }
 
 /**
- * Compress and encode a complete challenge payload into a URL hash link.
+ * Compresses and serializes a challenge payload into a full browser URL with hash fragment.
+ *
+ * @param payload Challenge payload to serialize.
+ * @returns Fully qualified URL containing compressed challenge parameters.
  */
 export const encodeChallengeToUrl = (payload: ShareableChallengePayload): string => {
   const jsonStr = JSON.stringify(payload);
@@ -26,7 +34,9 @@ export const encodeChallengeToUrl = (payload: ShareableChallengePayload): string
 };
 
 /**
- * Extract and decode a challenge payload from the current URL hash, if present.
+ * Extracts and decompresses a challenge payload from the current window location hash.
+ *
+ * @returns Parsed ShareableChallengePayload or null if no valid hash is present.
  */
 export const decodeChallengeFromUrl = (): ShareableChallengePayload | null => {
   const hash = window.location.hash;
@@ -42,8 +52,9 @@ export const decodeChallengeFromUrl = (): ShareableChallengePayload | null => {
   }
 };
 
-// ── Backwards-Compatible Game State Sharing ────────────────────────────────
-
+/**
+ * Historical game state structure for backwards-compatible link sharing.
+ */
 export interface ShareableState {
   challengeId?: string;
   playerCode?: string;
@@ -52,7 +63,10 @@ export interface ShareableState {
 }
 
 /**
- * Compress game state into a URL-safe hash string.
+ * Compresses game state into a URL-safe hash string.
+ *
+ * @param state Game state object to encode.
+ * @returns Compressed URI component string.
  */
 export function encodeState(state: ShareableState): string {
   const json = JSON.stringify(state);
@@ -60,7 +74,10 @@ export function encodeState(state: ShareableState): string {
 }
 
 /**
- * Decode a compressed URL hash back into game state.
+ * Decodes a compressed URL hash component back into game state.
+ *
+ * @param hash Compressed URI component.
+ * @returns Decoded state or null if decompression fails.
  */
 export function decodeState(hash: string): ShareableState | null {
   try {
@@ -73,7 +90,10 @@ export function decodeState(hash: string): ShareableState | null {
 }
 
 /**
- * Generate a full shareable URL for the current game state.
+ * Generates a full shareable URL containing encoded game state.
+ *
+ * @param state Game state to package into URL.
+ * @returns Full URL string.
  */
 export function generateShareUrl(state: ShareableState): string {
   const hash = encodeState(state);
@@ -81,7 +101,9 @@ export function generateShareUrl(state: ShareableState): string {
 }
 
 /**
- * Extract shared state from the current URL hash, if present.
+ * Extracts shared state from the URL hash if present.
+ *
+ * @returns Decoded game state or null if not found.
  */
 export function extractShareFromUrl(): ShareableState | null {
   const hash = window.location.hash;

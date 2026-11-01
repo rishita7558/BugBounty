@@ -1,3 +1,9 @@
+/**
+ * @file app.ts
+ * @description Express application setup, security middleware configuration, and routing definitions.
+ * Provides rate-limiting, CORS whitelisting, and validation endpoints with zero stateful database requirements.
+ */
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -11,14 +17,9 @@ import {
   validateHintRequest,
 } from './controllers/validation.controller.js';
 
-// ---------------------------------------------------------------------------
-// Express App — Minimal Node.js LLM Security Proxy & CORS Gateway.
-// Zero database dependencies. Zero session storage. ~100 LOC.
-// ---------------------------------------------------------------------------
-
 const app = express();
 
-// ── Security & Global Middleware ───────────────────────────────────────────
+// Security and request parsing middleware
 app.use(helmet());
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,http://localhost:4173')
@@ -28,7 +29,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173,ht
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or dev proxy)
+      // Allow requests with no origin (such as mobile clients, curl, or internal dev proxies)
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -40,7 +41,9 @@ app.use(
 
 app.use(express.json({ limit: '100kb' }));
 
-// ── Health Check ──────────────────────────────────────────────────────────
+/**
+ * Health check endpoint reporting service status, version, and server uptime.
+ */
 app.get('/api/health', generalRateLimiter, (_req, res) => {
   res.json({
     status: 'ok',
@@ -50,17 +53,17 @@ app.get('/api/health', generalRateLimiter, (_req, res) => {
   });
 });
 
-// ── LLM Proxy Routes ─────────────────────────────────────────────────────
+// Generative challenge and review endpoints
 app.post('/api/challenge/generate', llmRateLimiter, generateChallenge);
 app.post('/api/challenge/review', llmRateLimiter, reviewCode);
 app.post('/api/hint', llmRateLimiter, getHint);
 
-// ── Validation & Integrity Endpoints ─────────────────────────────────────
+// Game mechanics validation and integrity endpoints
 app.post('/api/score/validate', generalRateLimiter, validateScore);
 app.post('/api/streak/validate', generalRateLimiter, validateStreak);
 app.post('/api/hint/validate', generalRateLimiter, validateHintRequest);
 
-// ── Error Handler (must be last) ─────────────────────────────────────────
+// Centralized error handler middleware (must remain final middleware in pipeline)
 app.use(errorHandler);
 
 export default app;

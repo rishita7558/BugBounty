@@ -1,10 +1,11 @@
-import LZString from 'lz-string';
+/**
+ * @file index.ts
+ * @description Embeddable BugBountyReporter micro-SDK and static code analysis checker.
+ * Listens for runtime errors, unhandled rejections, and console errors in any host web app
+ * and renders a non-intrusive floating widget that serializes state into a 1-click debug URL.
+ */
 
-// ---------------------------------------------------------------------------
-// @codeduel/client-checker — Standalone Micro-SDK
-// Injects a "Report Bug to CodeDuel" button into any web app and serializes
-// current DOM state and console errors into a shareable 1-click debug link.
-// ---------------------------------------------------------------------------
+import LZString from 'lz-string';
 
 export interface CapturedError {
   message: string;
@@ -170,12 +171,11 @@ export class BugBountyReporter {
 
     button.onclick = () => {
       const shareUrl = BugBountyReporter.buildShareUrl(endpoint, appTitle);
-      // Copy to clipboard and offer to open in new tab
       if (navigator?.clipboard?.writeText) {
         navigator.clipboard.writeText(shareUrl).then(() => {
           showToast('Debug link copied to clipboard!');
         }).catch(() => {
-          // Fallback
+          // Clipboard access fallback
         });
       }
       window.open(shareUrl, '_blank');
@@ -298,8 +298,6 @@ triggerCapturedBug();
 `;
   }
 }
-
-// ── Static Code Checker Utility (Backwards-Compatible) ─────────────────────
 
 export interface BugCheckResult {
   hasBug: boolean;

@@ -1,15 +1,15 @@
+/**
+ * @file useCodeRunner.ts
+ * @description Sandboxed code execution engine using Web Workers and watchdog timeout protection.
+ * Executes untrusted player code in an isolated worker thread with console interception
+ * and automatic 2000ms loop termination to safeguard the browser UI from locking.
+ */
+
 import { useCallback, useRef, useState } from 'react';
 
-// ---------------------------------------------------------------------------
-// Web Worker Code Runner Hook
-// Executes player code in a sandboxed inline blob Worker.
-// Supports two modes:
-//   runCode()  — free execution, captures console output
-//   runTests() — assertion suite against test cases
-// Both have a strict 2000 ms watchdog that terminates the worker on infinite
-// loops, preventing the main thread from freezing.
-// ---------------------------------------------------------------------------
-
+/**
+ * Result returned from free code execution.
+ */
 export interface RunResult {
   mode: 'run';
   success: boolean;
@@ -18,6 +18,9 @@ export interface RunResult {
   executionTime: number;
 }
 
+/**
+ * Result returned from evaluating a single test case assertion.
+ */
 export interface TestCaseResult {
   testIndex: number;
   passed: boolean;
@@ -26,6 +29,9 @@ export interface TestCaseResult {
   executionTime: string;
 }
 
+/**
+ * Aggregate result returned from executing a test suite against player code.
+ */
 export interface TestResult {
   mode: 'test';
   success: boolean;
@@ -35,9 +41,9 @@ export interface TestResult {
 
 export type WorkerResult = RunResult | TestResult;
 
-// ---------------------------------------------------------------------------
-// Inline worker source (ES5-compatible, no imports needed)
-// ---------------------------------------------------------------------------
+/**
+ * Inline ES5 worker script capturing console output and handling assertions.
+ */
 const WORKER_SOURCE = `
 self.onmessage = function(e) {
   var data = e.data;
@@ -116,13 +122,18 @@ self.onmessage = function(e) {
 
 const WATCHDOG_MS = 2000;
 
-// ---------------------------------------------------------------------------
-// Helper — spin up a fresh blob worker, post message, enforce timeout
-// ---------------------------------------------------------------------------
+/**
+ * Spawns an ephemeral Web Worker blob instance to execute the supplied payload.
+ *
+ * @template T Expected return result type.
+ * @param payload Instruction payload for the worker.
+ * @param timeoutMs Maximum allowable execution time before worker termination.
+ * @returns Promise resolving to execution results.
+ */
 function spawnWorker<T>(payload: object, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve) => {
-    const blob   = new Blob([WORKER_SOURCE], { type: 'application/javascript' });
-    const url    = URL.createObjectURL(blob);
+    const blob = new Blob([WORKER_SOURCE], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
     const worker = new Worker(url);
 
     const timer = setTimeout(() => {
@@ -130,13 +141,17 @@ function spawnWorker<T>(payload: object, timeoutMs: number): Promise<T> {
       URL.revokeObjectURL(url);
       if ((payload as any).mode === 'run') {
         resolve({
-          mode: 'run', success: false, output: '',
+          mode: 'run',
+          success: false,
+          output: '',
           error: `Execution timed out (exceeded ${timeoutMs}ms). Possible infinite loop.`,
           executionTime: timeoutMs,
         } as unknown as T);
       } else {
         resolve({
-          mode: 'test', success: false, results: [],
+          mode: 'test',
+          success: false,
+          results: [],
           error: `Test timed out (exceeded ${timeoutMs}ms). Possible infinite loop.`,
         } as unknown as T);
       }
@@ -154,11 +169,20 @@ function spawnWorker<T>(payload: object, timeoutMs: number): Promise<T> {
       worker.terminate();
       URL.revokeObjectURL(url);
       if ((payload as any).mode === 'run') {
-        resolve({ mode: 'run', success: false, output: '',
-          error: err.message || 'Worker error', executionTime: 0 } as unknown as T);
+        resolve({
+          mode: 'run',
+          success: false,
+          output: '',
+          error: err.message || 'Worker error',
+          executionTime: 0,
+        } as unknown as T);
       } else {
-        resolve({ mode: 'test', success: false, results: [],
-          error: err.message || 'Worker error' } as unknown as T);
+        resolve({
+          mode: 'test',
+          success: false,
+          results: [],
+          error: err.message || 'Worker error',
+        } as unknown as T);
       }
     };
 
@@ -166,14 +190,22 @@ function spawnWorker<T>(payload: object, timeoutMs: number): Promise<T> {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
+/**
+ * Custom React hook managing sandboxed code execution in Web Workers.
+ *
+ * @returns Code execution methods and running status.
+ */
 export function useCodeRunner() {
   const [isRunning, setIsRunning] = useState(false);
   const activeWorkerRef = useRef<Promise<any> | null>(null);
 
-  /** Run code freely — captures console.log output */
+  /**
+   * Executes source code freely and captures standard console output.
+   *
+   * @param code The JavaScript code string to execute.
+   * @param timeoutMs Timeout watchdog threshold (defaults to 2000ms).
+   * @returns RunResult containing output and execution time.
+   */
   const runCode = useCallback(
     async (code: string, timeoutMs = WATCHDOG_MS): Promise<RunResult> => {
       setIsRunning(true);
@@ -185,15 +217,22 @@ export function useCodeRunner() {
         setIsRunning(false);
       }
     },
-    [],
+    []
   );
 
-  /** Run code against test cases — returns per-test pass/fail results */
+  /**
+   * Executes code against an array of input/output test cases.
+   *
+   * @param code The JavaScript code string defining a solution function.
+   * @param testCases Array of test inputs and expected outputs.
+   * @param timeoutMs Timeout watchdog threshold (defaults to 2000ms).
+   * @returns TestResult containing per-test breakdown.
+   */
   const runTests = useCallback(
     async (
       code: string,
       testCases: Array<{ input: any[]; expected: any }>,
-      timeoutMs = WATCHDOG_MS,
+      timeoutMs = WATCHDOG_MS
     ): Promise<TestResult> => {
       setIsRunning(true);
       try {
@@ -204,7 +243,7 @@ export function useCodeRunner() {
         setIsRunning(false);
       }
     },
-    [],
+    []
   );
 
   return { runCode, runTests, isRunning };

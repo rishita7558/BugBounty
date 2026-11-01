@@ -1,13 +1,28 @@
-// client/src/components/modals/DefeatModal.tsx
+/**
+ * @file DefeatModal.tsx
+ * @description Modal dialog rendered upon defeat, timer expiration, or forfeit.
+ * Resets local daily calendar streak records in IndexedDB and reveals the reference bug description.
+ */
+
 import { useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { RotateCcw, AlertOctagon, ChevronRight } from 'lucide-react';
 import { resetPlayerStreak } from '@/lib/db';
 
-interface DefeatModalProps {
+/**
+ * Properties accepted by the DefeatModal component.
+ */
+export interface DefeatModalProps {
+  /** Optional callback to advance directly to generating the next challenge. */
   onNextChallenge?: () => void;
 }
 
+/**
+ * DefeatModal component displaying forfeiture/timeout status and reference bug explanation.
+ *
+ * @param props Component properties.
+ * @returns Rendered modal overlay or null if not in defeat phase.
+ */
 export function DefeatModal({ onNextChallenge }: DefeatModalProps) {
   const phase = useGameStore((s) => s.phase);
   const challenge = useGameStore((s) => s.challenge);
@@ -80,7 +95,7 @@ export function DefeatModal({ onNextChallenge }: DefeatModalProps) {
           {challenge.title}
         </div>
 
-        {/* Correct solution display */}
+        {/* Reference bug explanation container */}
         <div
           style={{
             background: 'var(--bg-tertiary)',

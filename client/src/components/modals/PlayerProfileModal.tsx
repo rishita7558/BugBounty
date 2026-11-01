@@ -1,3 +1,10 @@
+/**
+ * @file PlayerProfileModal.tsx
+ * @description Modal dialog managing player callsign identity and career progression.
+ * Reads and persists hacker profiles, unlocked achievement badges, and solved bounty vouchers
+ * directly in client-side IndexedDB (Dexie).
+ */
+
 import { useState, useEffect } from 'react';
 import {
   getPlayerProfile,
@@ -10,11 +17,22 @@ import { ArcadeTicketModal } from '@/components/arcade/ArcadeTicketModal';
 import { type BountyTicketData } from '@/lib/ticketGenerator';
 import { User, Award, Flame, Trophy, Ticket, X, Clock, ShieldCheck } from 'lucide-react';
 
-interface PlayerProfileModalProps {
+/**
+ * Properties accepted by the PlayerProfileModal component.
+ */
+export interface PlayerProfileModalProps {
+  /** Whether the profile modal dialog is currently visible. */
   open: boolean;
+  /** Callback fired when closing the profile dialog. */
   onClose: () => void;
 }
 
+/**
+ * PlayerProfileModal component for inspecting career badges, callsigns, and local solve history.
+ *
+ * @param props Component properties.
+ * @returns Rendered modal overlay or null if closed.
+ */
 export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [solvedList, setSolvedList] = useState<SolvedChallenge[]>([]);
@@ -92,7 +110,7 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
             overflowY: 'auto',
           }}
         >
-          {/* Header */}
+          {/* Header bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <User size={24} color="var(--neon-cyan)" />

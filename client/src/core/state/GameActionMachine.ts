@@ -1,16 +1,35 @@
-// client/src/core/state/GameActionMachine.ts
+/**
+ * @file GameActionMachine.ts
+ * @description State transition guards and phase validation for gameplay actions.
+ * Enforces strict finite state machine boundaries across surrender, code execution,
+ * challenge generation, and fix submissions.
+ */
+
 import type { GamePhase } from '@/store/useGameStore';
 
+/**
+ * Result returned by action transition guard methods.
+ */
 export interface ActionTransitionResult {
+  /** Indicates whether the requested action is permitted in the current state. */
   allowed: boolean;
+  /** The target phase to transition to if the action succeeds. */
   targetPhase?: GamePhase;
+  /** Explanatory error message if the action is rejected. */
   error?: string;
 }
 
+/**
+ * Guard state machine validating action dispatch requests against the active game phase.
+ */
 export class GameActionMachine {
   /**
-   * Guard for "Surrender" action.
-   * Can only surrender during active challenge gameplay (playing or reviewing).
+   * Evaluates eligibility for the "Surrender" action.
+   * Only permitted during active gameplay ('playing' or 'reviewing') when no submission is in flight.
+   *
+   * @param currentPhase The active game phase.
+   * @param isSubmitting Whether a submission review is currently processing.
+   * @returns Action transition approval or rejection.
    */
   public static canSurrender(currentPhase: GamePhase, isSubmitting = false): ActionTransitionResult {
     if (isSubmitting) {
@@ -26,9 +45,13 @@ export class GameActionMachine {
   }
 
   /**
-   * Guard for "Run Tests / Run Code" action.
-   * Player must be in 'playing' or 'reviewing', worker must not already be running,
-   * and code must not be empty.
+   * Evaluates eligibility for the "Run Tests / Run Code" execution action.
+   * Requires active gameplay phase, idle worker state, and non-empty code buffer.
+   *
+   * @param currentPhase The active game phase.
+   * @param isRunning Whether code execution is already underway in the worker.
+   * @param code Current source code from the editor.
+   * @returns Action transition approval or rejection.
    */
   public static canRunCode(
     currentPhase: GamePhase,
@@ -51,8 +74,12 @@ export class GameActionMachine {
   }
 
   /**
-   * Guard for "Next Challenge" action.
-   * Can initiate when currently idle, victory, or defeat.
+   * Evaluates eligibility for requesting the next challenge.
+   * Permitted when idle, victorious, or defeated, and not already loading.
+   *
+   * @param currentPhase The active game phase.
+   * @param isLoading Whether challenge generation is already in progress.
+   * @returns Action transition approval or rejection.
    */
   public static canRequestNextChallenge(
     currentPhase: GamePhase,
@@ -72,7 +99,14 @@ export class GameActionMachine {
   }
 
   /**
-   * Guard for "Submit Fix" action.
+   * Evaluates eligibility for submitting a code fix for evaluation.
+   * Requires active gameplay, non-zero remaining time, and non-empty code buffer.
+   *
+   * @param currentPhase The active game phase.
+   * @param isSubmitting Whether a review is already in progress.
+   * @param timeRemaining Seconds remaining on the challenge countdown timer.
+   * @param code The submitted source code.
+   * @returns Action transition approval or rejection.
    */
   public static canSubmitFix(
     currentPhase: GamePhase,
@@ -95,4 +129,3 @@ export class GameActionMachine {
     return { allowed: true };
   }
 }
-

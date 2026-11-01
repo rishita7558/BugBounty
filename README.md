@@ -92,6 +92,8 @@ The client runs on `http://localhost:5173` and the server on `http://localhost:3
 
 ## 📚 Documentation
 
+- [System Architecture](docs/ARCHITECTURE.md)
+- [Contributing Guidelines](docs/CONTRIBUTING.md)
 - [Product Requirements (PRD)](docs/PRD.md)
 - [Technical Requirements (TRD)](docs/TRD.md)
 - [API Specification](docs/API_SPEC.md)

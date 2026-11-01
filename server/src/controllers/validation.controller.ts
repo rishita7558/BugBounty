@@ -1,12 +1,17 @@
-import type { Request, Response, NextFunction } from 'express';
+/**
+ * @file validation.controller.ts
+ * @description Controller providing server-side mathematical validation and integrity verification.
+ * Implements deterministic verification for arcade scoring breakdowns, calendar-day streak boundaries,
+ * and progressive hint state machine rules.
+ */
 
-// ---------------------------------------------------------------------------
-// Validation Controller — Server-Side Game Validation Endpoints
-// Mathematical validation of Scoring Engine, Calendar Streaks, and Hint rules.
-// ---------------------------------------------------------------------------
+import type { Request, Response, NextFunction } from 'express';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+/**
+ * Score calculation factor parameters submitted for validation.
+ */
 export interface ServerScoreFactors {
   basePoints: number;
   timeRemainingSeconds: number;
@@ -17,6 +22,9 @@ export interface ServerScoreFactors {
   isFirstAttemptSuccess: boolean;
 }
 
+/**
+ * Streak progression record submitted for calendar-day verification.
+ */
 export interface ServerStreakRecord {
   currentStreak: number;
   highestStreak: number;
@@ -25,7 +33,11 @@ export interface ServerStreakRecord {
 }
 
 /**
- * Validates and recalculates score server-side according to the Arcade Scoring Strategy.
+ * Validates and recalculates game score on the server according to the Arcade Scoring Engine formula.
+ *
+ * @param req Request containing score calculation factors in the body.
+ * @param res Response delivering the recalculated score and detailed mathematical breakdown.
+ * @param next Express error forwarding function.
  */
 export function validateScore(req: Request, res: Response, next: NextFunction) {
   try {
@@ -72,7 +84,11 @@ export function validateScore(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * Validates and computes streak transitions server-side using calendar-day math.
+ * Validates and computes streak progression using normalized calendar-day arithmetic.
+ *
+ * @param req Request containing current streak record and optional solve timestamp.
+ * @param res Response delivering validated streak progression and day delta.
+ * @param next Express error forwarding function.
  */
 export function validateStreak(req: Request, res: Response, next: NextFunction) {
   try {
@@ -151,7 +167,11 @@ export function validateStreak(req: Request, res: Response, next: NextFunction) 
 }
 
 /**
- * Validates whether a hint request meets state machine constraints.
+ * Validates whether an incoming hint request satisfies state machine prerequisites.
+ *
+ * @param req Request containing hintsUsed, maxHints, timeRemaining, and game phase.
+ * @param res Response indicating validation approval, next hint level, and applied penalty.
+ * @param next Express error forwarding function.
  */
 export function validateHintRequest(req: Request, res: Response, next: NextFunction) {
   try {

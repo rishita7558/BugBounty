@@ -1,10 +1,9 @@
-// ---------------------------------------------------------------------------
-// Web Worker — Sandboxed Code Runner (dual-mode)
-// MODE 1 — free run:   executes code and captures console output
-// MODE 2 — test suite: extracts `solution` fn and asserts against test cases
-//
-// Infinite-loop protection: the HOST terminates this worker after 2000 ms.
-// ---------------------------------------------------------------------------
+/**
+ * @file codeRunner.worker.ts
+ * @description Dedicated Web Worker script for sandboxed JavaScript code execution.
+ * Evaluates untrusted code in an isolated thread context, captures standard output streams,
+ * and executes unit test assertions without risking the responsiveness of the main UI thread.
+ */
 
 interface TestCase {
   input: any[];
@@ -40,7 +39,7 @@ self.onmessage = function (e: MessageEvent<WorkerInput>) {
   };
 
   try {
-    // ── MODE: free run ────────────────────────────────────────────────────
+    // Mode 1: Free run execution
     if (data.mode === 'run') {
       const start = performance.now();
       let result: unknown;
@@ -68,7 +67,7 @@ self.onmessage = function (e: MessageEvent<WorkerInput>) {
         executionTime: Math.round(end - start),
       });
 
-    // ── MODE: test-case assertion ─────────────────────────────────────────
+    // Mode 2: Test case assertion suite
     } else {
       let fn: (...args: any[]) => any;
 

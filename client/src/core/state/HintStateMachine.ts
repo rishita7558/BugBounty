@@ -1,14 +1,32 @@
-// client/src/core/state/HintStateMachine.ts
+/**
+ * @file HintStateMachine.ts
+ * @description Finite State Machine (FSM) governing progressive hint access.
+ * Enforces transition guards, confirmation workflows, point deduction audit logging,
+ * and automatic exhaustion upon reaching maximum limits or timer expiration.
+ */
 
+/**
+ * Status phases for the hint machine.
+ */
 export type HintStatus = 'HIDDEN' | 'CONFIRMATION' | 'REVEALED' | 'EXHAUSTED';
 
+/**
+ * Structured audit entry recorded whenever a hint is confirmed and revealed.
+ */
 export interface HintAuditRecord {
-  hintIndex: number; // 1-based index (e.g. 1, 2, 3)
-  penaltyDeducted: number; // 15 for 15%
-  revealedAt: number; // Unix epoch ms
+  /** 1-based index of the revealed hint tier. */
+  hintIndex: number;
+  /** Percentage penalty deducted from round score potential (e.g. 15 for 15%). */
+  penaltyDeducted: number;
+  /** Unix epoch timestamp (ms) when the hint was confirmed. */
+  revealedAt: number;
+  /** Clue text delivered to the player. */
   hintText: string;
 }
 
+/**
+ * Context state for the progressive hint state machine.
+ */
 export interface HintMachineContext {
   status: HintStatus;
   hintsUsed: number;
@@ -19,10 +37,19 @@ export interface HintMachineContext {
   error: string | null;
 }
 
+/**
+ * Finite state machine enforcing rules and audit logging for hint consumption.
+ */
 export class HintStateMachine {
   public static readonly DEFAULT_MAX_HINTS = 3;
-  public static readonly PENALTY_PER_HINT = 15; // 15% deduction
+  public static readonly PENALTY_PER_HINT = 15;
 
+  /**
+   * Factory method initializing a clean hint state context.
+   *
+   * @param maxHints Maximum hints allowed for the challenge.
+   * @returns Clean initial context.
+   */
   public static createInitialContext(maxHints = HintStateMachine.DEFAULT_MAX_HINTS): HintMachineContext {
     return {
       status: 'HIDDEN',
@@ -36,12 +63,12 @@ export class HintStateMachine {
   }
 
   /**
-   * Guard: can the user initiate a hint request?
-   * Requires:
-   * - Phase is active 'playing'
-   * - Countdown timer has remaining time (> 0)
-   * - Available hints not yet exhausted (< maxHints)
-   * - Not currently awaiting confirmation
+   * Evaluates whether a hint request can be initiated.
+   *
+   * @param ctx The active hint machine context.
+   * @param timeRemaining Countdown seconds remaining on the active timer.
+   * @param gamePhase The current game phase.
+   * @returns Approval status and optional explanatory reason.
    */
   public static canRequestHint(
     ctx: HintMachineContext,
@@ -64,8 +91,12 @@ export class HintStateMachine {
   }
 
   /**
-   * Transition: [HIDDEN] -> [CONFIRMATION DIALOG]
-   * Or from [REVEALED] -> [CONFIRMATION DIALOG] if requesting next hint.
+   * Transitions state from HIDDEN to CONFIRMATION to request player approval for penalties.
+   *
+   * @param ctx Current hint context.
+   * @param timeRemaining Remaining challenge time.
+   * @param gamePhase Current gameplay phase.
+   * @returns Transition result containing next context and status.
    */
   public static requestHint(
     ctx: HintMachineContext,
@@ -88,7 +119,10 @@ export class HintStateMachine {
   }
 
   /**
-   * Transition: [CONFIRMATION] -> (Cancel) -> [HIDDEN]
+   * Cancels the confirmation dialog and returns status to HIDDEN.
+   *
+   * @param ctx Current hint context.
+   * @returns Updated context.
    */
   public static cancel(ctx: HintMachineContext): HintMachineContext {
     if (ctx.status !== 'CONFIRMATION') {
@@ -102,8 +136,13 @@ export class HintStateMachine {
   }
 
   /**
-   * Transition: [CONFIRMATION] -> (Confirm) -> [REVEALED_HINT_N]
-   * Strictly logs structured audit record: { hintIndex, penaltyDeducted, revealedAt, hintText }
+   * Confirms hint penalty deduction and reveals the hint clue text with an audit record.
+   *
+   * @param ctx Current hint context.
+   * @param hintText Retrieved hint text.
+   * @param penaltyDeducted Percentage penalty applied.
+   * @param revealedAt Epoch timestamp of the reveal.
+   * @returns Next context and generated audit record.
    */
   public static confirm(
     ctx: HintMachineContext,
@@ -136,7 +175,10 @@ export class HintStateMachine {
   }
 
   /**
-   * Transition: [REVEALED] -> [HIDDEN] (Dismiss hint modal/card)
+   * Dismisses the active hint display card, returning state to HIDDEN or EXHAUSTED.
+   *
+   * @param ctx Current hint context.
+   * @returns Updated context.
    */
   public static dismiss(ctx: HintMachineContext): HintMachineContext {
     return {
@@ -147,7 +189,10 @@ export class HintStateMachine {
   }
 
   /**
-   * Timer expiration handler: automatically exhausts hints if timer hits 0.
+   * Timer expiration handler: automatically marks confirmation as exhausted if clock expires.
+   *
+   * @param ctx Current hint context.
+   * @returns Updated context.
    */
   public static onTimerExpire(ctx: HintMachineContext): HintMachineContext {
     if (ctx.status === 'CONFIRMATION') {
@@ -160,4 +205,3 @@ export class HintStateMachine {
     return ctx;
   }
 }
-

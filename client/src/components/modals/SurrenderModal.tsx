@@ -1,12 +1,28 @@
-// client/src/components/modals/SurrenderModal.tsx
+/**
+ * @file SurrenderModal.tsx
+ * @description Confirmation modal dialog for surrendering the active debugging challenge.
+ * Confirms forfeiture, resets active combo multiplier, and transitions game state to defeat.
+ */
+
 import { useGameStore } from '@/store/useGameStore';
 import { Flag, AlertTriangle } from 'lucide-react';
 
-interface SurrenderModalProps {
+/**
+ * Properties accepted by the SurrenderModal component.
+ */
+export interface SurrenderModalProps {
+  /** Whether the confirmation dialog is currently visible. */
   open: boolean;
+  /** Callback invoked to close the confirmation modal without forfeiting. */
   onClose: () => void;
 }
 
+/**
+ * SurrenderModal component providing confirmation guardrails before forfeiting a challenge.
+ *
+ * @param props Component properties.
+ * @returns Rendered modal overlay or null if closed.
+ */
 export function SurrenderModal({ open, onClose }: SurrenderModalProps) {
   const surrender = useGameStore((s) => s.surrender);
   const challenge = useGameStore((s) => s.challenge);
@@ -112,4 +128,3 @@ export function SurrenderModal({ open, onClose }: SurrenderModalProps) {
     </div>
   );
 }
-

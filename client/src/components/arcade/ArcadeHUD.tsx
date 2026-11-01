@@ -1,14 +1,22 @@
+/**
+ * @file ArcadeHUD.tsx
+ * @description Radial countdown indicator and combo multiplier display.
+ * Renders an animated SVG progress ring that dynamically transitions colour
+ * based on remaining challenge time and displays consecutive solve multipliers.
+ */
+
 import { useGameStore } from '@/store/useGameStore';
 import { formatTime } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// ArcadeHUD — Ticking Bomb SVG Radial Ring + Combo Counter
-// Spec: radial ring pulses red when < 30s remain; combos show x2/x3/x5 label
-// ---------------------------------------------------------------------------
-
 const RADIUS = 54;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS; // ≈ 339.3
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
+/**
+ * Computes the visual multiplier badge label for consecutive solve streaks.
+ *
+ * @param combo Consecutive correct solutions count.
+ * @returns Multiplier badge text or null if no multiplier is active.
+ */
 function getMultiplierLabel(combo: number): string | null {
   if (combo >= 7) return 'x5';
   if (combo >= 4) return 'x3';
@@ -16,6 +24,11 @@ function getMultiplierLabel(combo: number): string | null {
   return null;
 }
 
+/**
+ * ArcadeHUD component rendering countdown circle and combo bonuses.
+ *
+ * @returns Rendered HUD element.
+ */
 export function ArcadeHUD() {
   const timeRemaining = useGameStore((s) => s.timeRemaining);
   const timerActive = useGameStore((s) => s.timerActive);
@@ -31,7 +44,7 @@ export function ArcadeHUD() {
   // SVG ring offset — shrinks clockwise as time drains
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
-  // Ring colour transitions: cyan → gold → red
+  // Ring colour transitions: cyan -> gold -> red
   const ringColour = isCritical ? '#FF0055' : isWarning ? '#FFE600' : '#00E5FF';
   const ringGlow = isCritical
     ? 'drop-shadow(0 0 8px rgba(255,0,85,0.95))'

@@ -1,25 +1,31 @@
+/**
+ * @file HintModal.tsx
+ * @description Progressive hint dialog governed by the HintStateMachine.
+ * Manages confirmation transitions, penalty disclosures (-15% per tier),
+ * remote hint retrieval, and historical audit trail records for applied clues.
+ */
+
 import { useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { getHint } from '@/services/api';
 import { Lightbulb, AlertTriangle, CheckCircle2, History, X } from 'lucide-react';
 
-// ---------------------------------------------------------------------------
-// Hint Modal — Governed by Strict HintStateMachine
-// [HIDDEN] -> (Click "Use Hint (-15%)") -> [CONFIRMATION DIALOG]
-//                                           |
-//                   +-----------------------+-----------------------+
-//                   | (Confirm)                                     | (Cancel)
-//                   v                                               v
-//          [REVEALED_HINT_N]                                    [HIDDEN]
-// Deductions are logged as structured audit records: { hintIndex, penaltyDeducted: 15, revealedAt }
-// Hints disabled when exhausted (3/3) or timer expired.
-// ---------------------------------------------------------------------------
-
-interface HintModalProps {
+/**
+ * Properties accepted by the HintModal component.
+ */
+export interface HintModalProps {
+  /** Whether the hint modal dialog is currently visible. */
   open: boolean;
+  /** Callback fired when closing or dismissing the modal dialog. */
   onClose: () => void;
 }
 
+/**
+ * HintModal component displaying progressive clues, confirmation barriers, and audit records.
+ *
+ * @param props Component properties.
+ * @returns Rendered modal overlay or null if closed.
+ */
 export function HintModal({ open, onClose }: HintModalProps) {
   const challenge = useGameStore((s) => s.challenge);
   const timeRemaining = useGameStore((s) => s.timeRemaining);
@@ -120,7 +126,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header bar */}
         <div
           style={{
             display: 'flex',
@@ -153,7 +159,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
           </button>
         </div>
 
-        {/* Error notification if any */}
+        {/* Error notification display */}
         {fetchError && (
           <div
             style={{
@@ -174,7 +180,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
           </div>
         )}
 
-        {/* ── STATE: CONFIRMATION DIALOG ──────────────────────────────────── */}
+        {/* ── State: Confirmation Dialog ──────────────────────────────────── */}
         {isConfirming ? (
           <div
             style={{
@@ -248,7 +254,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
             </div>
           </div>
         ) : (
-          /* ── STATE: REVEALED / SUMMARY / AUDIT LOG ──────────────────────── */
+          /* ── State: Revealed / Summary / Audit Log ──────────────────────── */
           <div>
             {hintContext.auditLog.length > 0 ? (
               <div
@@ -318,7 +324,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
               </div>
             )}
 
-            {/* Audit Log Summary */}
+            {/* Audit log summary */}
             {hintContext.auditLog.length > 0 && (
               <div
                 style={{
@@ -370,7 +376,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
               </div>
             )}
 
-            {/* Modal Controls */}
+            {/* Modal controls */}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button className="btn-neon" onClick={handleClose}>
                 <span>Close</span>

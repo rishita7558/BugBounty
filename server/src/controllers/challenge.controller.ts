@@ -1,10 +1,15 @@
+/**
+ * @file challenge.controller.ts
+ * @description Controller handling challenge generation and submission evaluation requests.
+ * Formulates system prompts, normalizes challenge constraints, and routes payloads to the LLM service.
+ */
+
 import type { Request, Response, NextFunction } from 'express';
 import { queryLLM } from '../services/llm.service.js';
 
-// ---------------------------------------------------------------------------
-// Challenge Controller — Generates dynamic buggy-code challenges via LLM.
-// ---------------------------------------------------------------------------
-
+/**
+ * System prompt defining the strict JSON schema required for code debugging challenges.
+ */
 const CHALLENGE_SYSTEM_PROMPT = `You are a code challenge generator for "CodeDuel: BugBounty Arena", an arcade-style debugging game.
 
 Generate a JavaScript/TypeScript code challenge that contains ONE intentional bug the player must find and fix.
@@ -28,6 +33,13 @@ Return ONLY valid JSON with this exact schema:
   "points": <number>
 }`;
 
+/**
+ * Express handler to generate a new debugging challenge.
+ *
+ * @param req Request containing optional difficulty and category parameters in the body.
+ * @param res Response delivering the normalized challenge object.
+ * @param next Express error forwarding function.
+ */
 export async function generateChallenge(req: Request, res: Response, next: NextFunction) {
   try {
     const { difficulty = 'medium', category } = req.body as {
@@ -40,8 +52,8 @@ Make the bug realistic but findable. The code should be 10-40 lines long.
 The challenge should be fun and educational.`;
 
     const challenge: any = await queryLLM(CHALLENGE_SYSTEM_PROMPT, userPrompt);
-    
-    // Normalize time limits and arcade points so players have sufficient time
+
+    // Normalize time limits and arcade points so players have balanced gameplay
     const defaultTimeLimits: Record<string, number> = { easy: 120, medium: 150, hard: 180 };
     if (!challenge.timeLimit || challenge.timeLimit < 60) {
       challenge.timeLimit = defaultTimeLimits[difficulty.toLowerCase()] || 120;
@@ -57,6 +69,13 @@ The challenge should be fun and educational.`;
   }
 }
 
+/**
+ * Express handler to evaluate a submitted player solution against the original buggy code.
+ *
+ * @param req Request containing originalCode, fixedCode, and challengeId in the body.
+ * @param res Response delivering the evaluation review result.
+ * @param next Express error forwarding function.
+ */
 export async function reviewCode(req: Request, res: Response, next: NextFunction) {
   try {
     const { originalCode, fixedCode, challengeId } = req.body as {

@@ -1,10 +1,17 @@
+/**
+ * @file ArcadeTimer.tsx
+ * @description Compact digital countdown timer widget with CRT overlay styling.
+ * Displays formatted remaining challenge time and visually alerts players when the clock expires.
+ */
+
 import { useGameStore } from '@/store/useGameStore';
 import { formatTime } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// Arcade Timer — Ticking bomb countdown with CRT scanline overlay
-// ---------------------------------------------------------------------------
-
+/**
+ * ArcadeTimer component rendering digital countdown with visual warning pulses.
+ *
+ * @returns Rendered countdown timer element.
+ */
 export function ArcadeTimer() {
   const timeRemaining = useGameStore((s) => s.timeRemaining);
   const timerActive = useGameStore((s) => s.timerActive);
@@ -67,7 +74,7 @@ export function ArcadeTimer() {
         )}
       </div>
 
-      {/* Pulsing border when warning */}
+      {/* Pulsing warning border */}
       {isWarning && (
         <div
           style={{
