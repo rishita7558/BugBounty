@@ -10,6 +10,17 @@ import { NetworkApiError } from '@/core/errors/AppErrors';
 const BASE = '/api';
 
 /**
+ * Parameters for requesting dynamic challenge generation with language taxonomy and question rotation.
+ */
+export interface GenerateChallengeParams {
+  difficulty?: 'easy' | 'medium' | 'hard' | string;
+  category?: string;
+  topic?: string;
+  excludeIds?: string[];
+  language?: string;
+}
+
+/**
  * Performs a typed POST request against the backend gateway.
  *
  * @template T Expected response data type.
@@ -51,18 +62,24 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 
 /**
  * Requests the generation of a new buggy code challenge from the backend service.
+ * Supports topic selection, language specification, and question rotation with excludeIds.
  *
- * @param difficulty Target challenge difficulty tier ('easy', 'medium', 'hard').
- * @param category Optional vulnerability category domain.
+ * @param paramsOrDifficulty Difficulty string or options object.
+ * @param category Optional vulnerability category domain if first arg is string.
  * @returns Generated challenge payload.
  */
 export async function generateChallenge(
-  difficulty: string = 'medium',
+  paramsOrDifficulty: string | GenerateChallengeParams = 'medium',
   category?: string
 ): Promise<Challenge> {
+  const payload: GenerateChallengeParams =
+    typeof paramsOrDifficulty === 'string'
+      ? { difficulty: paramsOrDifficulty, category }
+      : paramsOrDifficulty;
+
   const data = await post<{ success: boolean; challenge: Challenge }>(
     '/challenge/generate',
-    { difficulty, category }
+    payload
   );
   return data.challenge;
 }
@@ -98,20 +115,38 @@ export async function reviewCode(
 export async function getHint(
   buggyCode: string,
   description: string,
-  hintLevel: number
+  hintLevel: number = 1
 ): Promise<{ hint: string; hintLevel: number; pointPenalty: number }> {
   return post('/hint', { buggyCode, description, hintLevel });
 }
 
 /**
- * Checks system operational health and backend proxy service status.
+ * Queries server health and version telemetry.
  *
- * @returns Health check payload with status and version.
+ * @returns Server health check metadata.
  */
-export async function checkHealth(): Promise<{ status: string; version: string }> {
-  const res = await fetch(`${BASE}/health`);
+export async function checkHealth(): Promise<{
+  status: string;
+  version: string;
+  uptime: number;
+  timestamp: string;
+}> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/health`);
+  } catch (err: unknown) {
+    throw new NetworkApiError(
+      `Health check request failed: ${err instanceof Error ? err.message : String(err)}`,
+      undefined,
+      '/health',
+      undefined,
+      { cause: err }
+    );
+  }
+
   if (!res.ok) {
     throw new NetworkApiError(`Health check failed with status ${res.status}`, res.status, '/health');
   }
+
   return res.json();
 }

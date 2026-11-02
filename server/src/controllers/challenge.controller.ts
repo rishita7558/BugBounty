@@ -1,7 +1,7 @@
 /**
  * @file challenge.controller.ts
  * @description Controller handling challenge generation and submission evaluation requests.
- * Formulates system prompts, normalizes challenge constraints, and routes payloads to the LLM service.
+ * Formulates system prompts, handles question rotation with excludeIds, and routes payloads to the LLM service.
  */
 
 import type { Request, Response, NextFunction } from 'express';
@@ -12,44 +12,66 @@ import { queryLLM } from '../services/llm.service.js';
  */
 const CHALLENGE_SYSTEM_PROMPT = `You are a code challenge generator for "CodeDuel: BugBounty Arena", an arcade-style debugging game.
 
-Generate a JavaScript/TypeScript code challenge that contains ONE intentional bug the player must find and fix.
+Generate a realistic code debugging challenge in the requested programming language (JavaScript, TypeScript, or Python) containing ONE intentional bug the player must find and fix.
 
 Return ONLY valid JSON with this exact schema:
 {
   "id": "unique-slug-id",
   "title": "Challenge Title",
-  "description": "Brief description of what the code should do",
+  "description": "Brief description of what the code should do and what is failing",
   "difficulty": "easy" | "medium" | "hard",
-  "category": "logic" | "async" | "dom" | "security" | "performance" | "syntax",
+  "category": "logic" | "async" | "security" | "types" | "memory" | "syntax",
+  "language": "javascript" | "typescript" | "python",
+  "topic": "topic-slug-or-domain",
   "buggyCode": "// The code with the intentional bug",
   "correctCode": "// The fixed version of the code",
   "bugLine": <number>,
   "bugDescription": "Explanation of the bug",
   "hints": ["Hint 1", "Hint 2", "Hint 3"],
   "testCases": [
-    { "input": "description of input", "expectedOutput": "expected result" }
+    { "input": "description of input or invocation", "expectedOutput": "expected result" }
   ],
   "timeLimit": <seconds>,
   "points": <number>
 }`;
 
 /**
- * Express handler to generate a new debugging challenge.
+ * Express handler to generate a new debugging challenge with topic selection and question rotation.
  *
- * @param req Request containing optional difficulty and category parameters in the body.
+ * @param req Request containing difficulty, category, topic, excludeIds, and language.
  * @param res Response delivering the normalized challenge object.
  * @param next Express error forwarding function.
  */
 export async function generateChallenge(req: Request, res: Response, next: NextFunction) {
   try {
-    const { difficulty = 'medium', category } = req.body as {
+    const {
+      difficulty = 'medium',
+      category,
+      topic,
+      excludeIds = [],
+      language = 'javascript',
+    } = req.body as {
       difficulty?: string;
       category?: string;
+      topic?: string;
+      excludeIds?: string[];
+      language?: string;
     };
 
-    const userPrompt = `Generate a ${difficulty} difficulty${category ? ` ${category} category` : ''} code debugging challenge. 
-Make the bug realistic but findable. The code should be 10-40 lines long.
-The challenge should be fun and educational.`;
+    const targetLang = (language || 'javascript').toLowerCase();
+
+    // Construct prompt with language specialization, topic targeting, and question rotation
+    const promptSegments = [
+      `Generate a ${difficulty} difficulty code debugging challenge in ${targetLang.toUpperCase()}.`,
+      topic ? `Target Topic/Vulnerability Archetype: "${topic}". Focus directly on bugs in this domain.` : '',
+      category && !topic ? `Vulnerability Category: ${category}.` : '',
+      excludeIds.length > 0
+        ? `QUESTION ROTATION ENFORCEMENT: Do NOT generate any of the following challenge IDs or repeat their scenarios: [${excludeIds.slice(0, 30).join(', ')}]. You MUST generate a completely new, distinct challenge with a fresh unique slug id.`
+        : '',
+      `The code should be 10-40 lines long, realistic, educational, and fun. Include exactly one bug.`,
+    ].filter(Boolean);
+
+    const userPrompt = promptSegments.join('\n');
 
     const challenge: any = await queryLLM(CHALLENGE_SYSTEM_PROMPT, userPrompt);
 
@@ -62,6 +84,13 @@ The challenge should be fun and educational.`;
       challenge.points = difficulty === 'hard' ? 500 : difficulty === 'medium' ? 250 : 100;
     }
     challenge.difficulty = difficulty.toLowerCase();
+    challenge.language = challenge.language || targetLang;
+    challenge.topic = challenge.topic || topic || challenge.category || 'general';
+
+    // Prevent ID collisions with excluded challenges
+    if (excludeIds.includes(challenge.id)) {
+      challenge.id = `${challenge.id}-${Math.random().toString(36).substring(2, 6)}`;
+    }
 
     res.json({ success: true, challenge });
   } catch (err) {
@@ -84,7 +113,7 @@ export async function reviewCode(req: Request, res: Response, next: NextFunction
       challengeId: string;
     };
 
-    const reviewPrompt = `You are a code review engine. Compare the buggy code with the player's fix.
+    const reviewPrompt = `You are a code review engine for an arcade debugging arena. Compare the buggy code with the player's fix.
 
 Return ONLY valid JSON:
 {

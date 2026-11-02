@@ -2,11 +2,13 @@
  * @file CodeEditor.tsx
  * @description Monaco code editor integration with custom retro cyberpunk syntax theming.
  * Provides live code editing, side-by-side diff comparison against original buggy code,
- * bracket colorization, and keyboard shortcuts (Ctrl/Cmd+Enter) for submission.
+ * bracket colorization, dynamic multi-language syntax switching (JS/TS/Python),
+ * and keyboard shortcuts (Ctrl/Cmd+Enter) for submission.
  */
 
 import Editor, { DiffEditor, type OnMount } from '@monaco-editor/react';
 import { useGameStore } from '@/store/useGameStore';
+import { getLanguageMeta, type SupportedLanguage } from '@/core/taxonomy/challengeTaxonomy';
 
 let themeRegistered = false;
 
@@ -130,8 +132,15 @@ export function CodeEditor({
   const playerCode = useGameStore((s) => s.playerCode);
   const setPlayerCode = useGameStore((s) => s.setPlayerCode);
   const phase = useGameStore((s) => s.phase);
+  const challenge = useGameStore((s) => s.challenge);
+  const selectedLanguage = useGameStore((s) => s.selectedLanguage);
 
   const isReadOnly = phase !== 'playing' && phase !== 'reviewing';
+
+  // Resolve dynamic language
+  const rawLang = ((challenge?.language as SupportedLanguage) || selectedLanguage || 'javascript').toLowerCase();
+  const currentLang: SupportedLanguage = rawLang === 'typescript' || rawLang === 'python' ? rawLang : 'javascript';
+  const meta = getLanguageMeta(currentLang);
 
   // Register theme and attach submission keybinding
   const handleMount: OnMount = (editor, monaco) => {
@@ -166,18 +175,34 @@ export function CodeEditor({
           flexShrink:     0,
         }}
       >
-        {/* Language badge */}
-        <span
-          style={{
-            fontFamily:    'var(--font-arcade)',
-            fontSize:      '0.5rem',
-            color:         '#00E5FF',
-            letterSpacing: '2px',
-            textShadow:    '0 0 8px rgba(0,229,255,0.6)',
-          }}
-        >
-          ◈ JS
-        </span>
+        {/* Dynamic Language badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
+            style={{
+              fontFamily:    'var(--font-arcade)',
+              fontSize:      '0.55rem',
+              color:         meta.color,
+              letterSpacing: '2px',
+              textShadow:    `0 0 8px ${meta.color}80`,
+            }}
+          >
+            ◈ {meta.badgeLabel}
+          </span>
+          {challenge?.topic && (
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.6rem',
+                color: 'var(--text-secondary)',
+                background: 'rgba(255,255,255,0.06)',
+                padding: '2px 6px',
+                borderRadius: '3px',
+              }}
+            >
+              #{challenge.topic}
+            </span>
+          )}
+        </div>
 
         {/* Keyboard shortcut hint */}
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'rgba(136,136,160,0.5)' }}>
@@ -211,7 +236,7 @@ export function CodeEditor({
         {showDiff ? (
           <DiffEditor
             height="100%"
-            language="javascript"
+            language={meta.monacoLanguage}
             original={originalCode}
             modified={playerCode}
             theme="cyberpunk"
@@ -227,7 +252,7 @@ export function CodeEditor({
         ) : (
           <Editor
             height="100%"
-            defaultLanguage="javascript"
+            language={meta.monacoLanguage}
             value={playerCode}
             onChange={(value) => setPlayerCode(value ?? '')}
             theme="cyberpunk"

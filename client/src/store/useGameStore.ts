@@ -23,6 +23,7 @@ import {
   type HintAuditRecord,
 } from '@/core/state/HintStateMachine';
 import { GameActionMachine } from '@/core/state/GameActionMachine';
+import type { SupportedLanguage } from '@/core/taxonomy/challengeTaxonomy';
 
 /**
  * Challenge specification schema.
@@ -33,6 +34,8 @@ export interface Challenge {
   description: string;
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
+  language?: SupportedLanguage | string;
+  topic?: string;
   buggyCode: string;
   correctCode: string;
   bugLine: number;
@@ -77,6 +80,11 @@ export interface GameState {
   challenge: Challenge | null;
   playerCode: string;
 
+  // Language taxonomy & question rotation
+  selectedLanguage: SupportedLanguage;
+  selectedTopic: string | null;
+  seenChallengeIds: string[];
+
   // Scoring and progression
   score: number;
   combo: number;
@@ -118,6 +126,10 @@ export interface GameState {
   setPhase: (phase: GamePhase) => void;
   setChallenge: (challenge: Challenge) => void;
   setPlayerCode: (code: string) => void;
+  setSelectedLanguage: (lang: SupportedLanguage) => void;
+  setSelectedTopic: (topicId: string | null) => void;
+  markChallengeSeen: (id: string) => void;
+  clearSeenChallenges: () => void;
   setTimeRemaining: (time: number) => void;
   setTimerActive: (active: boolean) => void;
   tickTimer: () => void;
@@ -230,6 +242,9 @@ export const useGameStore = create<GameState>()(
     // Initial state
     phase: 'idle',
     challenge: null,
+    selectedLanguage: 'javascript',
+    selectedTopic: null,
+    seenChallengeIds: [],
     playerCode: '',
     score: 0,
     combo: 0,
@@ -264,10 +279,27 @@ export const useGameStore = create<GameState>()(
 
     clearActionError: () => set({ actionError: null }),
 
+    setSelectedLanguage: (selectedLanguage) => set({ selectedLanguage }),
+
+    setSelectedTopic: (selectedTopic) => set({ selectedTopic }),
+
+    markChallengeSeen: (id) =>
+      set((state) => ({
+        seenChallengeIds: state.seenChallengeIds.includes(id)
+          ? state.seenChallengeIds
+          : [...state.seenChallengeIds, id],
+      })),
+
+    clearSeenChallenges: () => set({ seenChallengeIds: [] }),
+
     setChallenge: (challenge) =>
       set({
         challenge,
         playerCode: challenge.buggyCode,
+        seenChallengeIds: get().seenChallengeIds.includes(challenge.id)
+          ? get().seenChallengeIds
+          : [...get().seenChallengeIds, challenge.id],
+        selectedLanguage: (challenge.language as SupportedLanguage) || get().selectedLanguage,
         timeRemaining: challenge.timeLimit,
         phase: 'playing',
         timerActive: true,
@@ -277,6 +309,7 @@ export const useGameStore = create<GameState>()(
         review: null,
         showDiff: false,
         challengeAttempts: 0,
+
         actionError: null,
       }),
 
@@ -487,6 +520,9 @@ export const useGameStore = create<GameState>()(
       set({
         phase: 'idle',
         challenge: null,
+    selectedLanguage: 'javascript',
+    selectedTopic: null,
+    seenChallengeIds: [],
         playerCode: '',
         timeRemaining: 0,
         timerActive: false,
@@ -497,6 +533,7 @@ export const useGameStore = create<GameState>()(
         showDiff: false,
         screenShake: false,
         challengeAttempts: 0,
+
         lastScoreBreakdown: null,
         actionError: null,
       }),

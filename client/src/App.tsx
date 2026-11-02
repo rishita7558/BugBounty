@@ -19,6 +19,9 @@ import { DefeatModal } from '@/components/modals/DefeatModal';
 import { HintModal } from '@/components/modals/HintModal';
 import { SurrenderModal } from '@/components/modals/SurrenderModal';
 import { PlayerProfileModal } from '@/components/modals/PlayerProfileModal';
+import { TopicSelectorModal } from '@/components/modals/TopicSelectorModal';
+import { LeaderboardModal } from '@/components/modals/LeaderboardModal';
+import { getLanguageMeta, getTopicById } from '@/core/taxonomy/challengeTaxonomy';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { toAppError } from '@/core/errors/AppErrors';
 import {
@@ -46,6 +49,8 @@ import {
   X,
   Share2,
   User,
+  Trophy,
+  Layers,
   Check,
 } from 'lucide-react';
 
@@ -71,6 +76,9 @@ function App() {
   const timeRemaining = useGameStore((s) => s.timeRemaining);
   const hintContext = useGameStore((s) => s.hintContext);
   const actionError = useGameStore((s) => s.actionError);
+  const selectedLanguage = useGameStore((s) => s.selectedLanguage);
+  const selectedTopic = useGameStore((s) => s.selectedTopic);
+  const seenChallengeIds = useGameStore((s) => s.seenChallengeIds);
 
   // Store action dispatchers
   const setChallenge = useGameStore((s) => s.setChallenge);
@@ -83,12 +91,16 @@ function App() {
   const triggerScreenShake = useGameStore((s) => s.triggerScreenShake);
   const resetGame = useGameStore((s) => s.resetGame);
   const clearActionError = useGameStore((s) => s.clearActionError);
+  const setSelectedLanguage = useGameStore((s) => s.setSelectedLanguage);
+  const setSelectedTopic = useGameStore((s) => s.setSelectedTopic);
 
   // Local component state
   const [loading, setLoading] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
   const [surrenderOpen, setSurrenderOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [topicModalOpen, setTopicModalOpen] = useState(false);
+  const [leaderboardModalOpen, setLeaderboardModalOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -163,7 +175,12 @@ function App() {
 
     try {
       setPhase('loading');
-      const ch = await generateChallenge(difficulty);
+      const ch = await generateChallenge({
+        difficulty,
+        language: selectedLanguage,
+        topic: selectedTopic || undefined,
+        excludeIds: seenChallengeIds,
+      });
       setChallenge(ch);
       setConsoleOutput('');
       play('click');
@@ -175,7 +192,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [difficulty, phase, loading, setChallenge, setPhase, clearActionError, play]);
+  }, [difficulty, selectedLanguage, selectedTopic, seenChallengeIds, phase, loading, setChallenge, setPhase, clearActionError, play]);
 
   /**
    * Dispatches player source code to the sandboxed Web Worker execution engine.
@@ -353,6 +370,51 @@ function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Topic & Language Taxonomy selector */}
+            <button
+              className="btn-neon"
+              onClick={() => {
+                setTopicModalOpen(true);
+                play('click');
+              }}
+              title="Select Language & Bug Vulnerability Topic (JS / TS / Python)"
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Layers size={16} color={getLanguageMeta(selectedLanguage).color} />
+                <span style={{ color: getLanguageMeta(selectedLanguage).color }}>
+                  {getLanguageMeta(selectedLanguage).label}
+                </span>
+                {selectedTopic && (
+                  <span
+                    style={{
+                      fontSize: '0.6rem',
+                      opacity: 0.8,
+                      maxWidth: '120px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    • {getTopicById(selectedTopic)?.name || selectedTopic}
+                  </span>
+                )}
+              </span>
+            </button>
+
+            {/* Serverless Leaderboard trigger */}
+            <button
+              className="btn-neon"
+              onClick={() => {
+                setLeaderboardModalOpen(true);
+                play('click');
+              }}
+              title="Global Serverless Arcade Leaderboard"
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--neon-yellow)' }}>
+                <Trophy size={16} color="var(--neon-yellow)" /> Leaderboard
+              </span>
+            </button>
+
             {/* Player profile trigger */}
             <button
               className="btn-neon"
@@ -514,6 +576,36 @@ function App() {
                   Locate and resolve vulnerabilities in procedural code challenges. Score points,
                   build daily calendar streaks, and climb the leaderboard in the arena.
                 </p>
+              </div>
+
+              {/* Selected Topic & Language Badge */}
+              <div
+                onClick={() => {
+                  setTopicModalOpen(true);
+                  play('click');
+                }}
+                className="pixel-box"
+                style={{
+                  cursor: 'pointer',
+                  padding: '10px 18px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'rgba(18, 21, 38, 0.9)',
+                  border: `1px solid ${getLanguageMeta(selectedLanguage).color}`,
+                  maxWidth: '520px',
+                }}
+                title="Click to select specific vulnerability topics or switch language"
+              >
+                <Layers size={20} color={getLanguageMeta(selectedLanguage).color} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-pixel)', color: getLanguageMeta(selectedLanguage).color }}>
+                    {getLanguageMeta(selectedLanguage).label} // {selectedTopic ? getTopicById(selectedTopic)?.name : 'ALL VULNERABILITY DOMAINS'}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+                    {selectedTopic ? getTopicById(selectedTopic)?.description : 'Click to configure language (JS, TS, Python) and target specific bug archetypes.'}
+                  </div>
+                </div>
               </div>
 
               {/* Difficulty selector buttons */}
@@ -878,6 +970,20 @@ function App() {
         <HintModal open={hintOpen} onClose={() => setHintOpen(false)} />
         <SurrenderModal open={surrenderOpen} onClose={() => setSurrenderOpen(false)} />
         <PlayerProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+        <TopicSelectorModal
+          open={topicModalOpen}
+          activeTopicId={selectedTopic}
+          activeLanguage={selectedLanguage}
+          onSelectTopic={(topic) => {
+            setSelectedTopic(topic.id);
+            setSelectedLanguage(topic.language);
+          }}
+          onClose={() => setTopicModalOpen(false)}
+        />
+        <LeaderboardModal
+          open={leaderboardModalOpen}
+          onClose={() => setLeaderboardModalOpen(false)}
+        />
       </ErrorBoundary>
     </div>
   );
