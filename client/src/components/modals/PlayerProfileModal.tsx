@@ -13,6 +13,7 @@ import {
   type PlayerProfile,
   type SolvedChallenge,
 } from '@/lib/db';
+import { StreakEngine } from '@/services/StreakEngine';
 import { ArcadeTicketModal } from '@/components/arcade/ArcadeTicketModal';
 import { type BountyTicketData } from '@/lib/ticketGenerator';
 import { User, Award, Trophy, Ticket, X, Clock, ShieldCheck } from 'lucide-react';
@@ -39,6 +40,10 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
   const [editCallsign, setEditCallsign] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<BountyTicketData | null>(null);
+
+  const streakStats = StreakEngine.calculateStreak(
+    solvedList.map((s) => s.solvedAt)
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -198,7 +203,7 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '24px' }}>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#00D9FF' }}>
                   <Trophy size={14} />
@@ -208,14 +213,51 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
               </div>
 
               <div style={{ textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#00D9FF' }}>
+                  <Ticket size={14} />
+                  <span style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{solvedList.length}</span>
+                </div>
+                <div style={{ fontSize: '0.6rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>TOTAL SOLVED</div>
+              </div>
+
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ff6600' }}>
+                  <span style={{ fontSize: '0.9rem' }}>🔥</span>
+                  <span style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'var(--font-mono)', color: '#ff6600' }}>{streakStats.currentStreak}D</span>
+                </div>
+                <div style={{ fontSize: '0.6rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>CURRENT STREAK</div>
+              </div>
+
+              <div style={{ textAlign: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#65CFFF' }}>
                   <ShieldCheck size={14} />
-                  <span style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{profile?.currentStreak || 0}D</span>
+                  <span style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{streakStats.longestStreak}D</span>
                 </div>
-                <div style={{ fontSize: '0.6rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>DAILY STREAK</div>
+                <div style={{ fontSize: '0.6rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>LONGEST STREAK</div>
               </div>
             </div>
           </div>
+
+          {/* Daily Streak Retention Alert */}
+          {!streakStats.isActiveToday && (
+            <div
+              style={{
+                border: '1px solid #ffcc00',
+                background: 'rgba(255, 204, 0, 0.08)',
+                color: '#ffcc00',
+                padding: '10px 14px',
+                fontSize: '0.72rem',
+                fontFamily: 'var(--font-arcade, monospace)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                letterSpacing: '0.5px',
+              }}
+            >
+              <span style={{ fontWeight: 800 }}>[!]</span>
+              <span>Complete 1 bounty today to maintain your streak!</span>
+            </div>
+          )}
 
           {/* Badges Section */}
           <div>

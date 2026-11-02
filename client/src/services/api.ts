@@ -15,6 +15,7 @@ const BASE = '/api';
 export interface GenerateChallengeParams {
   difficulty?: 'easy' | 'medium' | 'hard' | string;
   category?: string;
+  mode?: 'dsa' | 'practical';
   topic?: string;
   challengeStyle?: string;
   excludeIds?: string[];

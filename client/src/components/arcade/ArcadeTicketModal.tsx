@@ -5,14 +5,14 @@
  * and barcode styling, with PDF, PNG, and direct browser print export capabilities.
  */
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   downloadTicketAsPdf,
   downloadTicketAsImage,
   printTicketDirectly,
   type BountyTicketData,
 } from '@/lib/ticketGenerator';
-import { Printer, Download, Image as ImageIcon, X, Check, Award } from 'lucide-react';
+import { Printer, Download, Image as ImageIcon, Check, Award } from 'lucide-react';
 
 /**
  * Properties accepted by the ArcadeTicketModal component.
@@ -36,6 +36,24 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
   const ticketRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [isExitHovered, setIsExitHovered] = useState(false);
+
+  const handleExit = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  // Global KeyboardEvent listener for the Escape key inside useEffect cleanup hook
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' || event.code === 'Escape') {
+        event.preventDefault();
+        handleExit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, handleExit]);
 
   if (!open) return null;
 
@@ -109,16 +127,26 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
             </span>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleExit}
+            onMouseEnter={() => setIsExitHovered(true)}
+            onMouseLeave={() => setIsExitHovered(false)}
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#8199B5',
+              background: isExitHovered ? '#00f0ff' : '#0a1128',
+              color: isExitHovered ? '#0a1128' : '#00f0ff',
+              border: '2px solid #00f0ff',
+              boxShadow: '2px 2px 0px #003366',
+              borderRadius: '0px',
+              padding: '6px 14px',
+              fontSize: '0.75rem',
+              fontWeight: 800,
               cursor: 'pointer',
-              padding: '4px',
+              fontFamily: 'var(--font-arcade, monospace)',
+              letterSpacing: '1px',
+              transition: 'none',
             }}
+            title="Exit back to lobby (Esc)"
           >
-            <X size={20} />
+            [ESC / EXIT]
           </button>
         </div>
 

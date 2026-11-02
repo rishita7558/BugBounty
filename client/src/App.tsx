@@ -23,6 +23,9 @@ import { SurrenderModal } from '@/components/modals/SurrenderModal';
 import { PlayerProfileModal } from '@/components/modals/PlayerProfileModal';
 import { TopicSelectorModal } from '@/components/modals/TopicSelectorModal';
 import { LeaderboardModal } from '@/components/modals/LeaderboardModal';
+import { ChallengeConfigModal } from '@/components/lobby/ChallengeConfigModal';
+import type { ChallengeConfigSelection } from '@/config/taxonomy';
+import { useScoreStore } from '@/store/useScoreStore';
 import { getLanguageMeta, getTopicById } from '@/core/taxonomy/challengeTaxonomy';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { toAppError } from '@/core/errors/AppErrors';
@@ -125,12 +128,21 @@ function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [topicModalOpen, setTopicModalOpen] = useState(false);
   const [leaderboardModalOpen, setLeaderboardModalOpen] = useState(false);
+  const [challengeConfigModalOpen, setChallengeConfigModalOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [easterEggActive, setEasterEggActive] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<ChallengeStyle>('fix-the-code');
+
+  const sessionScore = useScoreStore((s) => s.sessionScore);
+  const lifetimeScore = useScoreStore((s) => s.lifetimeScore);
+  const hydrateScores = useScoreStore((s) => s.hydrateScores);
+
+  useEffect(() => {
+    hydrateScores();
+  }, [hydrateScores]);
 
   /**
    * Initializes challenge state from URL hash if compressed challenge parameters are detected.
@@ -258,6 +270,60 @@ function App() {
   ]);
 
   /**
+   * Synthesizes and initiates a challenge from the dynamic Matrix Config lab.
+   */
+  const handleInitiateConfig = useCallback(async (selection: ChallengeConfigSelection) => {
+    setChallengeConfigModalOpen(false);
+    setLoading(true);
+    setLocalError(null);
+    clearActionError();
+    play('start');
+
+    const mappedDiff = selection.difficulty === 'NOVICE' ? 'easy' : selection.difficulty === 'VETERAN' ? 'medium' : 'hard';
+    setDifficulty(mappedDiff);
+    setSelectedLanguage(selection.language as any);
+    setSelectedTopic(selection.topic);
+
+    try {
+      setPhase('loading');
+      const { excludeIds: dbExcludeIds, recentFingerprints } = await getClientQuestionExclusions();
+      const combinedExcludeIds = Array.from(new Set([...seenChallengeIds, ...dbExcludeIds]));
+
+      const ch = await generateChallenge({
+        mode: selection.mode,
+        difficulty: mappedDiff,
+        language: selection.language,
+        topic: selection.topic,
+        challengeStyle: selectedStyle,
+        excludeIds: combinedExcludeIds,
+        recentFingerprints,
+      });
+
+      await recordClientQuestion(ch);
+      setChallenge(ch);
+      setConsoleOutput('');
+      play('click');
+    } catch (err: unknown) {
+      const appErr = toAppError(err, 'Failed to synthesize bounty challenge.');
+      console.error('[Arena] Failed to synthesize challenge:', appErr);
+      setLocalError(appErr.getUserFriendlyMessage());
+      setPhase('idle');
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    clearActionError,
+    play,
+    seenChallengeIds,
+    selectedStyle,
+    setChallenge,
+    setDifficulty,
+    setPhase,
+    setSelectedLanguage,
+    setSelectedTopic,
+  ]);
+
+  /**
    * Dispatches player source code to the sandboxed Web Worker execution engine.
    */
   const handleRunCode = useCallback(async () => {
@@ -336,6 +402,10 @@ function App() {
     try {
       const review = await reviewCode(challenge.buggyCode, playerCode, challenge.id);
       submitReview(review);
+      if (review.correct) {
+        const netDelta = useGameStore.getState().lastScoreBreakdown?.finalScore || challenge.points || 100;
+        await useScoreStore.getState().recordBountyVictory(netDelta);
+      }
       play(review.correct ? 'correct' : 'wrong');
       if (review.correct && useGameStore.getState().combo > 1) {
         setTimeout(() => play('combo'), 300);
@@ -507,8 +577,62 @@ function App() {
             </div>
           </div>
 
+          {/* Dual-Score System HUD */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              border: '2px solid #00f0ff',
+              boxShadow: '2px 2px 0px #003366',
+              borderRadius: '0px',
+              padding: '6px 14px',
+              background: '#081426',
+              fontFamily: 'var(--font-arcade, monospace)',
+              fontSize: '0.72rem',
+              letterSpacing: '1px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: '#8199b5', fontSize: '0.62rem' }}>SESSION:</span>
+              <span style={{ color: '#00f0ff', fontWeight: 800 }}>
+                [{String(sessionScore).padStart(4, '0')}] PTS
+              </span>
+            </div>
+            <span style={{ color: 'rgba(0, 240, 255, 0.4)' }}>|</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: '#8199b5', fontSize: '0.62rem' }}>LIFETIME:</span>
+              <span style={{ color: '#65cfff', fontWeight: 800 }}>
+                [{String(lifetimeScore).padStart(5, '0')}] PTS
+              </span>
+            </div>
+          </div>
+
           {/* Quick Actions & Modals */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Dynamic Challenge Config / Bounty Synthesis Lab */}
+            <button
+              className="btn-pixel-cyber"
+              onClick={() => {
+                setChallengeConfigModalOpen(true);
+                play('click');
+              }}
+              title="Open Bounty Synthesis Lab (DSA vs Practical, Language, Topic & Difficulty Config)"
+              style={{
+                border: '2px solid #00f0ff',
+                boxShadow: '2px 2px 0px #003366',
+                borderRadius: '0px',
+                background: '#0a1128',
+                color: '#00f0ff',
+                fontFamily: 'var(--font-arcade, monospace)',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                padding: '6px 12px',
+                cursor: 'pointer',
+              }}
+            >
+              [SYNTHESIS LAB]
+            </button>
             {/* Topic & Language Taxonomy selector */}
             <button
               className="btn-pixel-cyber"
@@ -1386,7 +1510,83 @@ function App() {
           open={leaderboardModalOpen}
           onClose={() => setLeaderboardModalOpen(false)}
         />
+        <ChallengeConfigModal
+          open={challengeConfigModalOpen}
+          onClose={() => setChallengeConfigModalOpen(false)}
+          onInitiate={handleInitiateConfig}
+          isLoading={loading}
+        />
       </ErrorBoundary>
+
+      {/* Retro Arcade Loading Screen Overlay */}
+      {loading && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 150,
+            background: 'rgba(5, 11, 24, 0.94)',
+            backdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '560px',
+              width: '100%',
+              background: '#081426',
+              border: '2px solid #00f0ff',
+              boxShadow: '4px 4px 0px #003366',
+              borderRadius: '0px',
+              padding: '28px',
+              fontFamily: 'var(--font-arcade, monospace)',
+              color: '#00f0ff',
+            }}
+          >
+            <div style={{ fontSize: '0.85rem', marginBottom: '14px', letterSpacing: '1px' }}>
+              &gt; SYNTHESIZING UNIQUE BOUNTY: {selectedLanguage.toUpperCase()} -&gt; {(selectedTopic || 'GENERAL').toUpperCase()}...
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#65cfff', marginBottom: '20px' }}>
+              &gt; APPLYING ANTI-DUPLICATION ENGINE [OK]
+            </div>
+            <div
+              style={{
+                width: '100%',
+                height: '20px',
+                border: '2px solid #00f0ff',
+                borderRadius: '0px',
+                background: '#0a1128',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: '85%',
+                  background: 'repeating-linear-gradient(90deg, #00f0ff 0px, #00f0ff 10px, #0a1128 10px, #0a1128 14px)',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                marginTop: '16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '0.65rem',
+                color: '#8199b5',
+                fontFamily: 'var(--font-mono, monospace)',
+              }}
+            >
+              <span>STATUS: SYNTHESIS_ACTIVE</span>
+              <span className="pixel-blink-cursor">_CONNECTING</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
