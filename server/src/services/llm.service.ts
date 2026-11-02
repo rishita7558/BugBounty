@@ -2,11 +2,13 @@
  * @file llm.service.ts
  * @description Generative AI and automated code analysis service gateway.
  * Implements provider abstraction (Google Gemini and OpenAI), strict JSON schema extraction,
- * question rotation filtering, and deterministic offline fallbacks for JS, TS, and Python.
+ * question rotation filtering, and deterministic offline fallbacks for all supported languages
+ * (JavaScript, TypeScript, Python, Rust, Go, C++, Java, SQL) with zero bug spoiler comments.
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
+import { generateProceduralChallenge } from './proceduralChallengeGenerator.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const LIVE_MODEL_NAME = 'gemini-2.5-flash';
@@ -20,11 +22,6 @@ const geminiModel = genAI.getGenerativeModel({
 
 type LLMProvider = 'gemini' | 'openai';
 
-/**
- * Resolves the active generative provider based on environment credentials.
- *
- * @returns Object with provider identifier and active API credential key.
- */
 function getProvider(): { provider: LLMProvider; key: string } {
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -38,14 +35,6 @@ function getProvider(): { provider: LLMProvider; key: string } {
   return { provider: 'gemini', key: '' };
 }
 
-/**
- * Strict JSON extractor and parser for model text responses.
- *
- * @template T Expected return type.
- * @param text Raw model output containing JSON or Markdown-fenced JSON.
- * @returns Parsed object payload.
- * @throws {Error} When content cannot be parsed as valid JSON.
- */
 function safeParseJSON<T = any>(text: string): T {
   let cleaned = text.trim();
   if (cleaned.startsWith('```json')) {
@@ -71,8 +60,7 @@ function safeParseJSON<T = any>(text: string): T {
 }
 
 /**
- * Curated offline fallback challenges indexed by difficulty tier and language domain.
- * Used when API keys are unconfigured, rate-limited, or network connectivity is severed.
+ * Curated challenges across all difficulty tiers and languages with NO bug-spoiler comments.
  */
 export const FALLBACK_CHALLENGES: Record<string, any[]> = {
   easy: [
@@ -86,7 +74,6 @@ export const FALLBACK_CHALLENGES: Record<string, any[]> = {
       topic: 'js-array-algorithms',
       buggyCode: `function sumEvenNumbers(numbers) {
   let sum = 0;
-  // Bug: loop condition stops 1 element too early
   for (let i = 0; i < numbers.length - 1; i++) {
     if (numbers[i] % 2 === 0) {
       sum += numbers[i];
@@ -103,7 +90,7 @@ export const FALLBACK_CHALLENGES: Record<string, any[]> = {
   }
   return sum;
 }`,
-      bugLine: 4,
+      bugLine: 3,
       bugDescription: 'Loop condition "i < numbers.length - 1" skips the final element in the array.',
       hints: [
         'Examine the loop termination condition carefully.',
@@ -135,7 +122,6 @@ export const FALLBACK_CHALLENGES: Record<string, any[]> = {
 }
 
 function getUserEmailDomain(user: UserProfile): string {
-  // Bug: Direct property access on optional nested contact object
   const email = user.contact.email;
   return email ? email.split('@')[1] : 'unknown';
 }`,
@@ -151,7 +137,7 @@ function getUserEmailDomain(user: UserProfile): string {
   const email = user.contact?.email;
   return email ? email.split('@')[1] : 'unknown';
 }`,
-      bugLine: 10,
+      bugLine: 9,
       bugDescription: 'Accessing user.contact.email directly throws TypeError when contact is undefined.',
       hints: [
         'Notice that user.contact is marked as optional with the ? operator.',
@@ -174,7 +160,6 @@ function getUserEmailDomain(user: UserProfile): string {
       language: 'python',
       topic: 'py-mutable-defaults',
       buggyCode: `def add_to_cart(item: str, cart: list = []) -> list:
-    # Bug: Mutable default list is instantiated once at function definition
     cart.append(item)
     return cart`,
       correctCode: `def add_to_cart(item: str, cart: list = None) -> list:
@@ -196,19 +181,118 @@ function getUserEmailDomain(user: UserProfile): string {
       timeLimit: 120,
       points: 100,
     },
+    {
+      id: 'rust-ownership-borrow-clone',
+      title: 'String Ownership Movement Bug',
+      description: 'The process_log function attempts to inspect and return a String slice, but drops ownership prematurely.',
+      difficulty: 'easy',
+      category: 'memory',
+      language: 'rust',
+      topic: 'rust-borrow-lifetimes',
+      buggyCode: `pub fn summarize_tag(tag: String) -> String {
+    let formatted = tag;
+    let length = tag.len();
+    format!("{}: {}", formatted, length)
+}`,
+      correctCode: `pub fn summarize_tag(tag: String) -> String {
+    let length = tag.len();
+    let formatted = tag;
+    format!("{}: {}", formatted, length)
+}`,
+      bugLine: 3,
+      bugDescription: 'tag was moved into formatted on line 2, making subsequent tag.len() an invalid use of moved value.',
+      hints: [
+        'In Rust, assigning tag to formatted transfers ownership.',
+        'You cannot read from tag once it has moved.',
+        'Calculate tag.len() before moving tag, or borrow &tag.',
+      ],
+      testCases: [
+        { input: 'String::from("AUTH")', expectedOutput: '"AUTH: 4"' },
+      ],
+      timeLimit: 120,
+      points: 100,
+    },
+    {
+      id: 'go-nil-slice-append',
+      title: 'Unchecked Pointer Dereference in Filter',
+      description: 'The filterActiveUsers function dereferences a nullable pointer struct without checking for nil.',
+      difficulty: 'easy',
+      category: 'types',
+      language: 'go',
+      topic: 'go-nil-interface-traps',
+      buggyCode: `package main
+
+type User struct {
+    Name   string
+    Active *bool
+}
+
+func IsActiveUser(u *User) bool {
+    return *u.Active
+}`,
+      correctCode: `package main
+
+type User struct {
+    Name   string
+    Active *bool
+}
+
+func IsActiveUser(u *User) bool {
+    if u == nil || u.Active == nil {
+        return false
+    }
+    return *u.Active
+}`,
+      bugLine: 9,
+      bugDescription: 'Directly dereferencing *u.Active panics with nil pointer dereference when Active is nil.',
+      hints: [
+        'Check whether u and u.Active can be nil before dereferencing.',
+        'Add a guard condition returning false if Active is nil.',
+      ],
+      testCases: [
+        { input: '&User{Name: "Admin", Active: nil}', expectedOutput: 'false' },
+      ],
+      timeLimit: 120,
+      points: 100,
+    },
+    {
+      id: 'sql-null-equality-check',
+      title: 'Three-Valued Logic NULL Comparison',
+      description: 'The query fails to return records where status is NULL because it compares with equality = instead of IS NULL.',
+      difficulty: 'easy',
+      category: 'logic',
+      language: 'sql',
+      topic: 'sql-three-valued-logic',
+      buggyCode: `SELECT id, username, status
+FROM security_audit_logs
+WHERE status = NULL;`,
+      correctCode: `SELECT id, username, status
+FROM security_audit_logs
+WHERE status IS NULL;`,
+      bugLine: 3,
+      bugDescription: 'In SQL, NULL = NULL evaluates to UNKNOWN, not TRUE. Use IS NULL.',
+      hints: [
+        'In ANSI SQL, how are NULL values compared?',
+        'Replace "= NULL" with "IS NULL".',
+      ],
+      testCases: [
+        { input: 'Scan rows with status null', expectedOutput: 'Matched rows returned' },
+      ],
+      timeLimit: 120,
+      points: 100,
+    },
   ],
   medium: [
     {
       id: 'closure-loop-timer',
       title: 'Asynchronous Variable Mutation',
-      description: 'The delayedGreeting function is intended to print greetings with sequential IDs, but prints the final count for all calls due to var scoping.',
+      description: 'The createTimers function is intended to produce functions returning sequential IDs, but returns the final count due to var scoping.',
       difficulty: 'medium',
       category: 'async',
       language: 'javascript',
       topic: 'js-closures-scope',
       buggyCode: `function createTimers(count) {
   const results = [];
-  // Bug: using var causes all callbacks to share the same variable
   for (var i = 0; i < count; i++) {
     results.push(() => i);
   }
@@ -221,7 +305,7 @@ function getUserEmailDomain(user: UserProfile): string {
   }
   return results.map(fn => fn());
 }`,
-      bugLine: 4,
+      bugLine: 3,
       bugDescription: 'Using "var" in a for loop binds "i" to function scope, resulting in all callbacks referencing the final value.',
       hints: [
         'Notice how "var" is scoped versus "let".',
@@ -238,7 +322,7 @@ function getUserEmailDomain(user: UserProfile): string {
     {
       id: 'ts-type-narrowing-union-exhaustion',
       title: 'Discriminated Union Exhaustiveness Flaw',
-      description: 'The handleArenaAction function drops critical action types because of incomplete union branching.',
+      description: 'The executeAction function drops critical action types because of incomplete union branching.',
       difficulty: 'medium',
       category: 'types',
       language: 'typescript',
@@ -254,7 +338,6 @@ function executeAction(action: ArenaAction): number {
       return action.damage;
     case 'DEFEND':
       return -action.shield;
-    // Bug: Missing 'HEAL' branch causes undefined return
   }
 }`,
       correctCode: `type ArenaAction =
@@ -272,7 +355,7 @@ function executeAction(action: ArenaAction): number {
       return action.amount;
   }
 }`,
-      bugLine: 12,
+      bugLine: 11,
       bugDescription: 'Missing case for HEAL causes switch to fall through with no return value.',
       hints: [
         'Check all variants defined in the ArenaAction discriminated union.',
@@ -295,7 +378,6 @@ function executeAction(action: ArenaAction): number {
       language: 'python',
       topic: 'py-generator-exhaustion',
       buggyCode: `def audit_transactions(records):
-    # Bug: generator is exhausted after first iteration
     tx_stream = (r['amount'] for r in records if r.get('valid'))
     total_volume = sum(tx_stream)
     max_single = max(tx_stream, default=0)
@@ -305,7 +387,7 @@ function executeAction(action: ArenaAction): number {
     total_volume = sum(tx_stream)
     max_single = max(tx_stream, default=0)
     return {'total': total_volume, 'max': max_single}`,
-      bugLine: 3,
+      bugLine: 2,
       bugDescription: 'Python generators can only be iterated over once; sum(tx_stream) exhausts the stream, leaving max() empty.',
       hints: [
         'What happens when you pass a generator expression to sum(), and then pass it to max()?',
@@ -314,6 +396,96 @@ function executeAction(action: ArenaAction): number {
       ],
       testCases: [
         { input: '[{"amount": 10, "valid": True}, {"amount": 50, "valid": True}]', expectedOutput: '{"total": 60, "max": 50}' },
+      ],
+      timeLimit: 150,
+      points: 250,
+    },
+    {
+      id: 'cpp-buffer-overflow-copy',
+      title: 'Unbounded String Copy Buffer Overflow',
+      description: 'The copy_token function uses strcpy without verifying destination buffer length, exposing a stack overflow vulnerability.',
+      difficulty: 'medium',
+      category: 'security',
+      language: 'cpp',
+      topic: 'cpp-buffer-overflow',
+      buggyCode: `#include <cstring>
+
+void copy_token(const char* src, char* dest, size_t dest_size) {
+    strcpy(dest, src);
+}`,
+      correctCode: `#include <cstring>
+
+void copy_token(const char* src, char* dest, size_t dest_size) {
+    strncpy(dest, src, dest_size - 1);
+    dest[dest_size - 1] = '\\0';
+}`,
+      bugLine: 4,
+      bugDescription: 'strcpy performs unbounded copy without bounds checking dest_size, allowing stack memory corruption.',
+      hints: [
+        'Notice dest_size is passed but completely ignored.',
+        'Use strncpy or snprintf to ensure bounds are enforced.',
+      ],
+      testCases: [
+        { input: 'src: 128 chars, dest: 32 chars', expectedOutput: 'Truncated safe copy' },
+      ],
+      timeLimit: 150,
+      points: 250,
+    },
+    {
+      id: 'java-equals-hashcode-mismatch',
+      title: 'Equals and HashCode Contract Violation',
+      description: 'The UserCredential class overrides equals but fails to override hashCode, corrupting hash-based collections.',
+      difficulty: 'medium',
+      category: 'logic',
+      language: 'java',
+      topic: 'java-equals-hashcode',
+      buggyCode: `public class UserCredential {
+    private String username;
+    private String realm;
+
+    public UserCredential(String username, String realm) {
+        this.username = username;
+        this.realm = realm;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UserCredential that = (UserCredential) o;
+        return username.equals(that.username) && realm.equals(that.realm);
+    }
+}`,
+      correctCode: `public class UserCredential {
+    private String username;
+    private String realm;
+
+    public UserCredential(String username, String realm) {
+        this.username = username;
+        this.realm = realm;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UserCredential that = (UserCredential) o;
+        return username.equals(that.username) && realm.equals(that.realm);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(username, realm);
+    }
+}`,
+      bugLine: 10,
+      bugDescription: 'Violating the hashCode contract causes equal objects to hash into different buckets in HashMap/HashSet.',
+      hints: [
+        'When overriding equals in Java, which companion method must also be overridden?',
+        'Implement hashCode() using Objects.hash(username, realm).',
+      ],
+      testCases: [
+        { input: 'Set insertion and lookup', expectedOutput: 'Match found in set' },
       ],
       timeLimit: 150,
       points: 250,
@@ -331,7 +503,6 @@ function executeAction(action: ArenaAction): number {
       buggyCode: `function deepMerge(target, source) {
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
-      // Bug: Missing guard against proto / constructor keys
       if (typeof source[key] === 'object' && source[key] !== null) {
         target[key] = deepMerge(target[key] || {}, source[key]);
       } else {
@@ -356,7 +527,7 @@ function executeAction(action: ArenaAction): number {
   }
   return target;
 }`,
-      bugLine: 5,
+      bugLine: 4,
       bugDescription: 'Unfiltered keys permit __proto__ pollution which corrupts Object prototype.',
       hints: [
         'Think about dangerous properties that can alter global Object prototype behavior.',
@@ -382,7 +553,6 @@ function executeAction(action: ArenaAction): number {
 import asyncio
 
 async def fetch_sensor_data(sensor_id: str):
-    # Bug: synchronous blocking sleep halts the asyncio event loop
     time.sleep(1)
     return {"sensor": sensor_id, "reading": 42}`,
       correctCode: `import asyncio
@@ -390,7 +560,7 @@ async def fetch_sensor_data(sensor_id: str):
 async def fetch_sensor_data(sensor_id: str):
     await asyncio.sleep(1)
     return {"sensor": sensor_id, "reading": 42}`,
-      bugLine: 6,
+      bugLine: 5,
       bugDescription: 'time.sleep() blocks the OS thread, freezing the single-threaded asyncio event loop for all concurrent tasks.',
       hints: [
         'Check whether time.sleep() is non-blocking or blocking in an asyncio environment.',
@@ -403,25 +573,59 @@ async def fetch_sensor_data(sensor_id: str):
       timeLimit: 180,
       points: 500,
     },
+    {
+      id: 'sql-injection-dynamic-query',
+      title: 'Unescaped Dynamic SQL Injection Vulnerability',
+      description: 'The authenticateUser function concatenates raw user input into an SQL command string without parameterized binding.',
+      difficulty: 'hard',
+      category: 'security',
+      language: 'sql',
+      topic: 'sql-injection-sanitization',
+      buggyCode: `CREATE OR REPLACE FUNCTION authenticate_user(p_user TEXT, p_pass TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_query TEXT;
+    v_found BOOLEAN;
+BEGIN
+    v_query := 'SELECT TRUE FROM accounts WHERE user = ''' || p_user || ''' AND pass = ''' || p_pass || '''';
+    EXECUTE v_query INTO v_found;
+    RETURN COALESCE(v_found, FALSE);
+END;
+$$ LANGUAGE plpgsql;`,
+      correctCode: `CREATE OR REPLACE FUNCTION authenticate_user(p_user TEXT, p_pass TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_found BOOLEAN;
+BEGIN
+    SELECT TRUE INTO v_found FROM accounts WHERE user = p_user AND pass = p_pass;
+    RETURN COALESCE(v_found, FALSE);
+END;
+$$ LANGUAGE plpgsql;`,
+      bugLine: 7,
+      bugDescription: 'String concatenation into dynamic SQL permits injection payload bypass (e.g. admin\' OR 1=1--).',
+      hints: [
+        'Dynamic EXECUTE string concatenation allows SQL injection.',
+        'Use parameterized static query with arguments instead of building SQL strings.',
+      ],
+      testCases: [
+        { input: 'admin\' OR \'1\'=\'1', expectedOutput: 'Injection thwarted' },
+      ],
+      timeLimit: 180,
+      points: 500,
+    },
   ],
 };
 
-/**
- * Generates a debugging challenge with strict JSON schema compliance.
- *
- * @param difficulty Target challenge difficulty tier.
- * @param language Target programming language.
- * @returns Parsed challenge data object.
- */
 export const generateBugChallenge = async (difficulty = 'medium', language = 'javascript') => {
   const prompt = `Generate a realistic buggy code challenge in ${language} at ${difficulty} level.
+CRITICAL: Do NOT include code comments pointing out or explaining the bug.
 Return ONLY a valid JSON object matching this schema:
 {
   "id": "slug-name",
   "title": "Title of Bug",
   "description": "Context of the failure",
   "language": "${language}",
-  "buggyCode": "code with a subtle logical flaw",
+  "buggyCode": "clean code with a subtle logical flaw without comments pointing out the bug",
   "testCases": [{"input": [args], "expected": result}],
   "hints": ["Hint 1", "Hint 2"]
 }`;
@@ -438,17 +642,9 @@ Return ONLY a valid JSON object matching this schema:
   }
 };
 
-/**
- * Executes a generative query against the configured provider with automatic offline fallback.
- *
- * @param systemPrompt System instructions specifying output schemas and evaluation criteria.
- * @param userPrompt User prompt containing context, submitted code, or challenge parameters.
- * @returns Parsed JSON evaluation or fallback response.
- */
 export async function queryLLM(systemPrompt: string, userPrompt: string): Promise<any> {
   const { provider, key } = getProvider();
 
-  // Gemini generative pipeline
   if (provider === 'gemini' && key) {
     try {
       const model = genAI.getGenerativeModel({
@@ -468,7 +664,6 @@ export async function queryLLM(systemPrompt: string, userPrompt: string): Promis
     }
   }
 
-  // OpenAI chat completion pipeline
   if (provider === 'openai' && key) {
     try {
       const openai = new OpenAI({ apiKey: key });
@@ -489,12 +684,11 @@ export async function queryLLM(systemPrompt: string, userPrompt: string): Promis
     }
   }
 
-  // Deterministic fallbacks for evaluation reviews and hints when external services are unavailable
   if (systemPrompt.includes('code review') || userPrompt.includes('Evaluate the fix')) {
     return {
       correct: true,
       score: 95,
-      feedback: 'Excellent work! The bug has been resolved with precision.',
+      feedback: 'Excellent work! The vulnerability has been resolved cleanly with proper validation.',
       suggestions: ['Consider adding unit tests for edge cases.'],
       comboBonus: true,
     };
@@ -512,31 +706,29 @@ export async function queryLLM(systemPrompt: string, userPrompt: string): Promis
     };
   }
 
-  // Intelligent fallback selection considering requested difficulty, language, topic, and excluded IDs
   const difficultyMatch = (userPrompt.match(/easy|medium|hard/i) || ['medium'])[0].toLowerCase();
-  const rawPool = FALLBACK_CHALLENGES[difficultyMatch] || FALLBACK_CHALLENGES.medium;
 
-  // Detect language requested
   let targetLang = 'javascript';
-  if (/python/i.test(userPrompt)) targetLang = 'python';
-  else if (/typescript/i.test(userPrompt)) targetLang = 'typescript';
+  const langMatch = userPrompt.match(/typescript|python|rust|go|cpp|c\+\+|java|sql|javascript/i);
+  if (langMatch) {
+    const raw = langMatch[0].toLowerCase();
+    targetLang = raw === 'c++' ? 'cpp' : raw;
+  }
 
-  // Detect excludeIds from prompt
   const excludeMatch = userPrompt.match(/\[([a-zA-Z0-9_,\s-]+)\]/);
   const excludeList = excludeMatch ? excludeMatch[1].split(',').map((s) => s.trim()) : [];
 
-  // Filter pool matching language
-  let langPool = rawPool.filter((c) => (c.language || 'javascript').toLowerCase() === targetLang);
-  if (langPool.length === 0) langPool = rawPool;
+  const topicMatch = userPrompt.match(/Target Topic\/Vulnerability Archetype: "([^"]+)"/i);
+  const targetTopic = topicMatch ? topicMatch[1] : undefined;
 
-  // Filter out excluded IDs
-  let available = langPool.filter((c) => !excludeList.includes(c.id));
-  if (available.length === 0) {
-    // If all are excluded, select one from langPool and generate a new rotated ID
-    const chosen = { ...langPool[Math.floor(Math.random() * langPool.length)] };
-    chosen.id = `${chosen.id}-${Date.now().toString(36).slice(-4)}`;
-    return chosen;
-  }
+  const categoryMatch = userPrompt.match(/Vulnerability Category: ([a-zA-Z0-9_-]+)/i);
+  const targetCategory = categoryMatch ? categoryMatch[1] : undefined;
 
-  return { ...available[Math.floor(Math.random() * available.length)] };
+  return generateProceduralChallenge({
+    difficulty: difficultyMatch,
+    language: targetLang,
+    topic: targetTopic,
+    category: targetCategory,
+    excludeIds: excludeList,
+  });
 }

@@ -1,6 +1,6 @@
 /**
  * @file SurrenderModal.tsx
- * @description Confirmation modal dialog for surrendering the active debugging challenge.
+ * @description Confirmation modal dialog for surrendering the active debugging challenge — ICE MATRIX edition.
  * Confirms forfeiture, resets active combo multiplier, and transitions game state to defeat.
  */
 
@@ -45,19 +45,20 @@ export function SurrenderModal({ open, onClose }: SurrenderModalProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(6px)',
+        background: 'rgba(5, 11, 24, 0.88)',
+        backdropFilter: 'blur(10px)',
       }}
       onClick={onClose}
     >
       <div
-        className="glass-card animate-shake"
+        className="pixel-box hud-corner-brackets animate-screen-shake"
         style={{
           padding: '32px',
-          maxWidth: '440px',
+          maxWidth: '460px',
           width: '90%',
-          border: '1px solid rgba(255, 0, 85, 0.4)',
-          boxShadow: '0 0 30px rgba(255, 0, 85, 0.2)',
+          background: 'rgba(8, 20, 38, 0.95)',
+          border: '1px solid rgba(255, 59, 105, 0.45)',
+          boxShadow: '0 20px 50px rgba(5, 11, 24, 0.9), 0 0 30px rgba(255, 59, 105, 0.2)',
           textAlign: 'center',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -66,62 +67,74 @@ export function SurrenderModal({ open, onClose }: SurrenderModalProps) {
           style={{
             display: 'inline-flex',
             padding: '12px',
-            borderRadius: '50%',
-            background: 'rgba(255, 0, 85, 0.1)',
+            background: 'rgba(255, 59, 105, 0.1)',
+            border: '1px solid rgba(255, 59, 105, 0.4)',
             marginBottom: '16px',
-            color: 'var(--neon-red)',
+            color: '#FF3B69',
           }}
+          className="pixel-box"
         >
-          <Flag size={32} />
+          <Flag size={28} />
+        </div>
+
+        <div className="pixel-status-badge" style={{ marginBottom: '10px', color: '#FF3B69', borderColor: 'rgba(255, 59, 105, 0.4)' }}>
+          WARNING • FORFEIT PROTOCOL
         </div>
 
         <h3
           className="arcade-text"
-          style={{ fontSize: '0.9rem', color: 'var(--neon-red)', marginBottom: '12px' }}
+          style={{ fontSize: '0.95rem', color: '#FF3B69', marginBottom: '12px' }}
         >
           SURRENDER CHALLENGE?
         </h3>
 
         <p
           style={{
-            color: 'var(--text-secondary)',
+            color: '#8199B5',
             fontSize: '0.85rem',
             lineHeight: 1.5,
             marginBottom: '20px',
           }}
         >
-          Giving up will forfeit all points for <strong>{challenge.title}</strong>, reset your current combo, and reveal the solution.
+          Giving up will forfeit all bounty points for <strong>{challenge.title}</strong>, reset your current combo multiplier, and reveal the solution.
         </p>
 
         <div
           style={{
-            background: 'rgba(255, 0, 85, 0.08)',
-            border: '1px solid rgba(255, 0, 85, 0.2)',
-            borderRadius: 'var(--radius-sm)',
+            background: '#050B18',
+            border: '1px solid rgba(255, 59, 105, 0.3)',
             padding: '10px 14px',
             marginBottom: '24px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
             fontSize: '0.75rem',
-            color: 'var(--text-muted)',
+            color: '#8199B5',
             fontFamily: 'var(--font-mono)',
             textAlign: 'left',
           }}
         >
-          <AlertTriangle size={16} color="var(--neon-yellow)" />
-          <span>Note: You can review the correct fix immediately upon surrendering.</span>
+          <AlertTriangle size={16} color="#FF3B69" />
+          <span>Active combo and daily streak records will be impacted.</span>
         </div>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <button className="btn-neon" onClick={onClose}>
-            <span>Keep Fighting</span>
+          <button
+            className="btn-pixel-cyber"
+            onClick={onClose}
+          >
+            Cancel
           </button>
           <button
-            className="btn-neon btn-neon-red"
+            className="btn-pixel-cyber"
             onClick={handleConfirmSurrender}
+            style={{
+              borderColor: '#FF3B69',
+              color: '#FF3B69',
+              background: 'rgba(255, 59, 105, 0.15)',
+            }}
           >
-            <span>🏳️ Confirm Surrender</span>
+            Confirm Forfeit
           </button>
         </div>
       </div>

@@ -1,8 +1,8 @@
 /**
  * @file ArcadeHUD.tsx
- * @description Radial countdown indicator and combo multiplier display.
- * Renders an animated SVG progress ring that dynamically transitions colour
- * based on remaining challenge time and displays consecutive solve multipliers.
+ * @description Radial countdown indicator and combo multiplier display — ICE MATRIX edition.
+ * Renders an animated SVG progress ring with cryogenic indicators, segment tick marks,
+ * dynamic warning thresholds, and tactical multipliers.
  */
 
 import { useGameStore } from '@/store/useGameStore';
@@ -44,38 +44,55 @@ export function ArcadeHUD() {
   // SVG ring offset — shrinks clockwise as time drains
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
-  // Ring colour transitions: cyan -> gold -> red
-  const ringColour = isCritical ? '#FF0055' : isWarning ? '#FFE600' : '#00E5FF';
+  // Ring colour transitions: Electric Cyan -> Ice Blue -> Controlled Alert Ruby
+  const ringColour = isCritical ? '#FF3B69' : isWarning ? '#65CFFF' : '#00D9FF';
   const ringGlow = isCritical
-    ? 'drop-shadow(0 0 8px rgba(255,0,85,0.95))'
+    ? 'drop-shadow(0 0 10px rgba(255, 59, 105, 0.85))'
     : isWarning
-    ? 'drop-shadow(0 0 7px rgba(255,230,0,0.85))'
-    : 'drop-shadow(0 0 6px rgba(0,229,255,0.65))';
+    ? 'drop-shadow(0 0 8px rgba(101, 207, 255, 0.75))'
+    : 'drop-shadow(0 0 8px rgba(0, 217, 255, 0.65))';
 
   const multiplierLabel = getMultiplierLabel(combo);
   const multiplierFloat = combo > 1 ? (1 + (combo - 1) * 0.25).toFixed(2) : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-      {/* ── Bomb Countdown Ring ─────────────────────────────────────────── */}
+      {/* ── Cryogenic Countdown Gauge ─────────────────────────────────────── */}
       <div
-        className="glass-card crt-overlay"
+        className="pixel-box hud-corner-brackets"
         style={{
-          padding: '16px',
+          padding: '16px 20px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '6px',
-          minWidth: '168px',
-          position: 'relative',
+          gap: '8px',
+          minWidth: '175px',
+          background: 'rgba(8, 20, 38, 0.9)',
+          border: '1px solid rgba(0, 217, 255, 0.3)',
+          boxShadow: '0 8px 30px rgba(5, 11, 24, 0.8)',
         }}
       >
-        <span
-          className="arcade-text"
-          style={{ fontSize: '0.45rem', color: 'var(--text-secondary)', letterSpacing: '3px' }}
-        >
-          ⏱ TIME
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span
+            style={{
+              width: '5px',
+              height: '5px',
+              background: ringColour,
+              boxShadow: `0 0 6px ${ringColour}`,
+            }}
+          />
+          <span
+            style={{
+              fontSize: '0.65rem',
+              color: '#8199B5',
+              letterSpacing: '2px',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 600,
+            }}
+          >
+            CRYO-TIMER
+          </span>
+        </div>
 
         {/* SVG radial ring */}
         <div style={{ position: 'relative', width: '128px', height: '128px' }}>
@@ -91,8 +108,18 @@ export function ArcadeHUD() {
               cy="64"
               r={RADIUS}
               fill="none"
-              stroke="rgba(255,255,255,0.07)"
-              strokeWidth="8"
+              stroke="rgba(129, 153, 181, 0.12)"
+              strokeWidth="6"
+            />
+            {/* Inner secondary cyber tick track */}
+            <circle
+              cx="64"
+              cy="64"
+              r={RADIUS - 8}
+              fill="none"
+              stroke="rgba(0, 217, 255, 0.08)"
+              strokeWidth="1"
+              strokeDasharray="4 6"
             />
             {/* Animated progress ring */}
             <circle
@@ -101,8 +128,8 @@ export function ArcadeHUD() {
               r={RADIUS}
               fill="none"
               stroke={ringColour}
-              strokeWidth="8"
-              strokeLinecap="round"
+              strokeWidth="6"
+              strokeLinecap="square"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={strokeDashoffset}
               style={{
@@ -125,15 +152,15 @@ export function ArcadeHUD() {
             }}
           >
             <span
-              className={`arcade-text${isCritical ? ' animate-timer-warning' : ''}`}
+              className="arcade-text"
               style={{
                 fontSize: '1.25rem',
                 color: ringColour,
                 textShadow: isCritical
-                  ? '0 0 20px rgba(255,0,85,0.95)'
+                  ? '0 0 18px rgba(255, 59, 105, 0.9)'
                   : isWarning
-                  ? '0 0 16px rgba(255,230,0,0.8)'
-                  : '0 0 12px rgba(0,229,255,0.65)',
+                  ? '0 0 14px rgba(101, 207, 255, 0.8)'
+                  : '0 0 12px rgba(0, 217, 255, 0.7)',
                 lineHeight: 1,
               }}
             >
@@ -143,12 +170,13 @@ export function ArcadeHUD() {
             {!timerActive && timeRemaining > 0 && (
               <span
                 style={{
-                  fontSize: '0.48rem',
-                  color: '#FFE600',
+                  fontSize: '0.55rem',
+                  color: '#B8D8EA',
                   fontFamily: 'var(--font-mono)',
+                  letterSpacing: '1px',
                 }}
               >
-                PAUSED
+                [PAUSED]
               </span>
             )}
           </div>
@@ -160,10 +188,9 @@ export function ArcadeHUD() {
             className="animate-pulse-glow"
             style={{
               position: 'absolute',
-              inset: '-2px',
-              borderRadius: 'var(--radius-lg)',
-              border: `2px solid ${ringColour}`,
-              opacity: 0.75,
+              inset: '-1px',
+              border: `1px solid ${ringColour}`,
+              opacity: 0.65,
               pointerEvents: 'none',
             }}
           />
@@ -173,41 +200,52 @@ export function ArcadeHUD() {
       {/* ── Combo Counter ───────────────────────────────────────────────── */}
       {combo > 0 && (
         <div
-          className="glass-card animate-score-pop"
+          className="pixel-box animate-score-pop"
           style={{
             padding: '12px 20px',
             textAlign: 'center',
-            minWidth: '168px',
+            minWidth: '175px',
+            background: 'rgba(8, 20, 38, 0.9)',
+            border: '1px solid rgba(0, 217, 255, 0.3)',
           }}
         >
           <span
-            className="arcade-text"
             style={{
-              fontSize: '0.45rem',
-              color: 'var(--text-secondary)',
+              fontSize: '0.6rem',
+              color: '#8199B5',
               letterSpacing: '2px',
               display: 'block',
-              marginBottom: '4px',
+              marginBottom: '2px',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 600,
             }}
           >
-            COMBO
+            MATRIX COMBO
           </span>
 
           {/* Big combo number */}
-          <span className="combo-display" style={{ fontSize: '2rem', display: 'block' }}>
+          <span
+            className="arcade-text"
+            style={{
+              fontSize: '1.75rem',
+              display: 'block',
+              color: '#00D9FF',
+              textShadow: '0 0 16px rgba(0, 217, 255, 0.7)',
+            }}
+          >
             x{combo}
           </span>
 
           {/* Tier label: x2 / x3 / x5 */}
           {multiplierLabel && (
             <span
-              className="arcade-text"
               style={{
-                fontSize: '0.52rem',
-                color: '#FFE600',
-                textShadow: '0 0 10px rgba(255,230,0,0.75)',
+                fontSize: '0.65rem',
+                color: '#65CFFF',
+                fontFamily: 'var(--font-mono)',
                 display: 'block',
-                marginTop: '3px',
+                marginTop: '2px',
+                fontWeight: 700,
               }}
             >
               {multiplierLabel} MULTIPLIER
@@ -219,12 +257,12 @@ export function ArcadeHUD() {
             <span
               style={{
                 fontSize: '0.65rem',
-                color: 'var(--text-secondary)',
+                color: '#8199B5',
                 fontFamily: 'var(--font-mono)',
                 display: 'block',
               }}
             >
-              ×{multiplierFloat}
+              ×{multiplierFloat} BONUS
             </span>
           )}
         </div>

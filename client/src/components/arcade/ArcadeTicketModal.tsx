@@ -1,6 +1,6 @@
 /**
  * @file ArcadeTicketModal.tsx
- * @description Modal dialog presenting a printable retro arcade bounty ticket.
+ * @description Modal dialog presenting a printable retro arcade bounty ticket — ICE MATRIX edition.
  * Renders ticket data including challenge metadata, operator callsign, score breakdown,
  * and barcode styling, with PDF, PNG, and direct browser print export capabilities.
  */
@@ -79,22 +79,23 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(5, 5, 12, 0.85)',
-        backdropFilter: 'blur(10px)',
+        background: 'rgba(5, 11, 24, 0.88)',
+        backdropFilter: 'blur(12px)',
         padding: '20px',
       }}
     >
       <div
-        className="glass-card"
+        className="pixel-box hud-corner-brackets"
         style={{
-          maxWidth: '520px',
+          maxWidth: '540px',
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
           gap: '20px',
-          padding: '24px',
-          border: '1px solid var(--border-neon)',
-          boxShadow: '0 0 30px rgba(0, 240, 255, 0.25)',
+          padding: '28px',
+          background: 'rgba(8, 20, 38, 0.95)',
+          border: '1px solid rgba(0, 217, 255, 0.4)',
+          boxShadow: '0 24px 60px rgba(5, 11, 24, 0.9), 0 0 35px rgba(0, 217, 255, 0.2)',
           maxHeight: '90vh',
           overflowY: 'auto',
         }}
@@ -102,9 +103,9 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
         {/* Header bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Award size={20} color="var(--neon-yellow)" />
-            <span className="arcade-text" style={{ fontSize: '0.75rem', color: 'var(--neon-yellow)' }}>
-              OFFICIAL BOUNTY TICKET
+            <Award size={20} color="#00D9FF" />
+            <span className="arcade-text neon-text" style={{ fontSize: '0.75rem' }}>
+              OFFICIAL BOUNTY VOUCHER
             </span>
           </div>
           <button
@@ -112,7 +113,7 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--text-muted)',
+              color: '#8199B5',
               cursor: 'pointer',
               padding: '4px',
             }}
@@ -126,14 +127,13 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
           ref={ticketRef}
           className="printable-ticket"
           style={{
-            background: 'linear-gradient(135deg, #0d0e1c 0%, #15162b 100%)',
-            border: '2px dashed #00f0ff',
-            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #050B18 0%, #081426 100%)',
+            border: '2px dashed #00D9FF',
             padding: '24px',
             position: 'relative',
-            color: '#f0f0ff',
+            color: '#EAF8FF',
             fontFamily: 'var(--font-mono)',
-            boxShadow: 'inset 0 0 20px rgba(0, 240, 255, 0.1)',
+            boxShadow: 'inset 0 0 20px rgba(0, 217, 255, 0.1)',
             WebkitPrintColorAdjust: 'exact',
             printColorAdjust: 'exact',
           }}
@@ -142,18 +142,18 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
           <div
             style={{
               textAlign: 'center',
-              borderBottom: '1px solid rgba(0, 240, 255, 0.3)',
+              borderBottom: '1px solid rgba(0, 217, 255, 0.25)',
               paddingBottom: '12px',
               marginBottom: '16px',
             }}
           >
-            <div style={{ fontSize: '0.65rem', letterSpacing: '3px', color: '#00f0ff', textTransform: 'uppercase' }}>
-              ★ CODEDUEL: BUGBOUNTY ARENA ★
+            <div style={{ fontSize: '0.65rem', letterSpacing: '3px', color: '#00D9FF', textTransform: 'uppercase' }}>
+              ★ CODEDUEL: ICE MATRIX ARENA ★
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#ffe600', margin: '4px 0' }}>
+            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#EAF8FF', margin: '4px 0' }}>
               CERTIFIED BOUNTY REDEMPTION
             </div>
-            <div style={{ fontSize: '0.7rem', color: '#9090b0' }}>
+            <div style={{ fontSize: '0.7rem', color: '#8199B5' }}>
               SERIAL ID: #{data.ticketId}
             </div>
           </div>
@@ -161,22 +161,22 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
           {/* Ticket Body Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
             <div>
-              <div style={{ fontSize: '0.65rem', color: '#707090' }}>OPERATOR / CALLSIGN</div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#39ff14' }}>{data.callsign}</div>
+              <div style={{ fontSize: '0.65rem', color: '#8199B5' }}>OPERATOR / CALLSIGN</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#00D9FF' }}>{data.callsign}</div>
             </div>
             <div>
-              <div style={{ fontSize: '0.65rem', color: '#707090' }}>DIFFICULTY TIER</div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ff0055' }}>
+              <div style={{ fontSize: '0.65rem', color: '#8199B5' }}>DIFFICULTY TIER</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#65CFFF' }}>
                 {data.difficulty.toUpperCase()}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.65rem', color: '#707090' }}>VULNERABILITY RESOLVED</div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>{data.challengeTitle}</div>
+              <div style={{ fontSize: '0.65rem', color: '#8199B5' }}>VULNERABILITY RESOLVED</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#EAF8FF' }}>{data.challengeTitle}</div>
             </div>
             <div>
-              <div style={{ fontSize: '0.65rem', color: '#707090' }}>BOUNTY VALUE</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#00f0ff' }}>
+              <div style={{ fontSize: '0.65rem', color: '#8199B5' }}>BOUNTY VALUE</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#00D9FF' }}>
                 +{data.bountyPoints} PTS
               </div>
             </div>
@@ -185,92 +185,79 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
           {/* Execution Specs */}
           <div
             style={{
-              background: 'rgba(0, 0, 0, 0.4)',
-              borderRadius: '6px',
+              background: '#050B18',
+              border: '1px solid rgba(0, 217, 255, 0.2)',
               padding: '10px 14px',
               marginBottom: '16px',
               fontSize: '0.75rem',
               display: 'flex',
               justifyContent: 'space-between',
-              color: '#a0a0c0',
+              color: '#8199B5',
             }}
           >
             <span>Time Elapsed: {data.timeSpentSeconds}s</span>
-            <span>Combo Multiplier: x{data.comboMultiplier.toFixed(2)}</span>
+            <span>Combo: x{data.comboMultiplier.toFixed(2)}</span>
             <span>{data.solvedAt}</span>
           </div>
 
-          {/* Barcode graphic */}
-          <div style={{ textAlign: 'center', marginTop: '14px' }}>
+          {/* Barcode Mock */}
+          <div style={{ textAlign: 'center' }}>
             <div
               style={{
-                height: '32px',
-                background:
-                  'repeating-linear-gradient(90deg, #fff 0px, #fff 2px, transparent 2px, transparent 5px, #fff 5px, #fff 9px, transparent 9px, transparent 11px, #fff 11px, #fff 16px)',
-                opacity: 0.85,
-                margin: '0 auto 6px auto',
-                maxWidth: '280px',
+                letterSpacing: '4px',
+                fontFamily: 'monospace',
+                fontSize: '1.2rem',
+                color: '#00D9FF',
+                opacity: 0.8,
               }}
-            />
-            <div style={{ fontSize: '0.6rem', letterSpacing: '4px', color: '#707090' }}>
-              * 100% CLIENT-PERSISTED • ZERO SERVER FOOTPRINT *
+            >
+              ||| | |||| | ||| |||| | | |||
+            </div>
+            <div style={{ fontSize: '0.6rem', color: '#8199B5', marginTop: '4px' }}>
+              SEC-HASH: {data.ticketId}-ICE-MATRIX-VERIFIED
             </div>
           </div>
         </div>
 
-        {/* Notification toast */}
+        {/* Feedback Toast */}
         {toast && (
           <div
+            className="pixel-box"
             style={{
-              background: 'rgba(57, 255, 20, 0.15)',
-              border: '1px solid var(--neon-green)',
-              color: 'var(--neon-green)',
-              padding: '8px 14px',
-              borderRadius: '6px',
+              padding: '8px 12px',
+              background: 'rgba(0, 217, 255, 0.12)',
+              border: '1px solid #00D9FF',
+              color: '#00D9FF',
               fontSize: '0.75rem',
               textAlign: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
             }}
           >
-            <Check size={14} /> {toast}
+            <Check size={14} style={{ display: 'inline', marginRight: '4px' }} />
+            {toast}
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {/* Export Action Controls */}
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
-            className="btn-neon btn-neon-green"
+            className="btn-pixel-cyber"
+            onClick={() => printTicketDirectly()}
+          >
+            <Printer size={14} color="#00D9FF" /> Print
+          </button>
+          <button
+            className="btn-pixel-cyber"
             onClick={handleDownloadPdf}
             disabled={downloading}
-            style={{ padding: '8px 16px', fontSize: '0.8rem' }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Download size={14} /> {downloading ? 'Rendering...' : 'Download PDF'}
-            </span>
+            <Download size={14} color="#65CFFF" /> PDF
           </button>
-
           <button
-            className="btn-neon"
+            className="btn-pixel-primary"
             onClick={handleDownloadImage}
             disabled={downloading}
-            style={{ padding: '8px 16px', fontSize: '0.8rem' }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ImageIcon size={14} /> PNG Image
-            </span>
-          </button>
-
-          <button
-            className="btn-neon"
-            onClick={printTicketDirectly}
-            style={{ padding: '8px 16px', fontSize: '0.8rem' }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Printer size={14} /> Print
-            </span>
+            <ImageIcon size={14} /> PNG Image
           </button>
         </div>
       </div>

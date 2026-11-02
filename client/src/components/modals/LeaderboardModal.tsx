@@ -1,8 +1,8 @@
 /**
  * @file LeaderboardModal.tsx
- * @description Serverless arcade leaderboard modal dialog for CodeDuel: BugBounty Arena.
+ * @description Serverless arcade leaderboard modal dialog for CodeDuel: BugBounty Arena — ICE MATRIX edition.
  * Displays global and local rankings using GitHub Gist synchronization with seamless
- * fallback to client-side IndexedDB persistence, rendered in authentic retro pixel-art styling.
+ * fallback to client-side IndexedDB persistence, rendered in authentic Ice Matrix cyberpunk styling.
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -100,22 +100,25 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(5, 11, 24, 0.88)',
+        backdropFilter: 'blur(12px)',
         padding: '16px',
       }}
       onClick={onClose}
     >
       <div
-        className="pixel-box pixel-box-cyan animate-in fade-in zoom-in-95"
+        className="pixel-box hud-corner-brackets"
         style={{
           width: '100%',
-          maxWidth: '820px',
+          maxWidth: '850px',
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          background: '#090A0F',
+          background: 'rgba(8, 20, 38, 0.96)',
+          border: '1px solid rgba(0, 217, 255, 0.4)',
+          boxShadow: '0 24px 60px rgba(5, 11, 24, 0.9), 0 0 35px rgba(0, 217, 255, 0.2)',
           overflow: 'hidden',
+          padding: '24px',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -126,54 +129,28 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingBottom: '14px',
-            borderBottom: '2px solid rgba(0, 229, 255, 0.25)',
+            borderBottom: '1px solid rgba(0, 217, 255, 0.2)',
           }}
         >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Trophy size={20} color="var(--neon-yellow)" />
-              <h2 className="pixel-title" style={{ fontSize: '1rem', margin: 0, color: 'var(--neon-yellow)' }}>
-                SERVERLESS LEADERBOARD
+              <Trophy size={20} color="#00D9FF" />
+              <h2 className="arcade-text neon-text" style={{ fontSize: '0.85rem', margin: 0 }}>
+                GLOBAL CYBERNETIC LEDGER
               </h2>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
               {source === 'gist' ? (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.55rem',
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--neon-green)',
-                    background: 'rgba(0, 255, 163, 0.12)',
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    border: '1px solid rgba(0, 255, 163, 0.3)',
-                  }}
-                >
-                  <Globe size={11} /> LIVE GIST SYNC
+                <span className="pixel-status-badge">
+                  <Globe size={11} color="#00D9FF" /> LIVE GIST LEDGER
                 </span>
               ) : (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.55rem',
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--neon-yellow)',
-                    background: 'rgba(255, 230, 0, 0.12)',
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    border: '1px solid rgba(255, 230, 0, 0.3)',
-                  }}
-                >
-                  <Database size={11} /> LOCAL INDEXEDDB ARCHIVE
+                <span className="pixel-status-badge">
+                  <Database size={11} color="#65CFFF" /> LOCAL INDEXEDDB LEDGER
                 </span>
               )}
-              <span className="pixel-subtext" style={{ fontSize: '0.55rem' }}>
-                Zero Server Database Architecture
+              <span style={{ fontSize: '0.65rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>
+                ZERO-SERVER CRYPTOGRAPHIC RANKING
               </span>
             </div>
           </div>
@@ -185,19 +162,14 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
                 loadScores();
               }}
               disabled={loading}
-              className="pixel-btn"
+              className="btn-pixel-cyber"
               style={{
-                padding: '6px 10px',
-                fontSize: '0.65rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                color: 'var(--neon-cyan)',
+                padding: '6px 12px',
+                fontSize: '0.7rem',
               }}
               title="Refresh Leaderboard"
             >
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={13} color="#00D9FF" className={loading ? 'animate-spin' : ''} />
               SYNC
             </button>
 
@@ -206,16 +178,16 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
                 play('click');
                 onClose();
               }}
-              className="pixel-btn"
               style={{
-                padding: '6px 10px',
-                fontSize: '0.7rem',
-                color: 'var(--text-secondary)',
+                background: 'transparent',
+                border: 'none',
+                color: '#8199B5',
                 cursor: 'pointer',
+                padding: '4px',
               }}
               aria-label="Close modal"
             >
-              <X size={16} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -227,7 +199,7 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '8px',
-            marginTop: '12px',
+            marginTop: '14px',
             flexWrap: 'wrap',
           }}
         >
@@ -247,15 +219,13 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
                     play('click');
                     setSelectedLang(lang.id);
                   }}
-                  className="pixel-btn"
+                  className="btn-pixel-cyber"
                   style={{
-                    padding: '4px 8px',
-                    fontSize: '0.55rem',
-                    fontFamily: 'var(--font-pixel)',
-                    cursor: 'pointer',
-                    background: active ? 'rgba(0, 229, 255, 0.2)' : 'transparent',
-                    border: active ? '1px solid var(--neon-cyan)' : '1px solid rgba(255,255,255,0.1)',
-                    color: active ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                    padding: '4px 10px',
+                    fontSize: '0.65rem',
+                    borderColor: active ? '#00D9FF' : 'rgba(129, 153, 181, 0.2)',
+                    background: active ? 'rgba(0, 217, 255, 0.15)' : 'rgba(5, 11, 24, 0.7)',
+                    color: active ? '#00D9FF' : '#8199B5',
                   }}
                 >
                   {lang.label}
@@ -275,16 +245,14 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
                     play('click');
                     setSelectedDiff(diff);
                   }}
-                  className="pixel-btn"
+                  className="btn-pixel-cyber"
                   style={{
-                    padding: '4px 8px',
-                    fontSize: '0.55rem',
-                    fontFamily: 'var(--font-pixel)',
+                    padding: '4px 10px',
+                    fontSize: '0.65rem',
                     textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    background: active ? 'rgba(255, 0, 229, 0.2)' : 'transparent',
-                    border: active ? '1px solid var(--neon-magenta)' : '1px solid rgba(255,255,255,0.1)',
-                    color: active ? 'var(--neon-magenta)' : 'var(--text-secondary)',
+                    borderColor: active ? '#65CFFF' : 'rgba(129, 153, 181, 0.2)',
+                    background: active ? 'rgba(101, 207, 255, 0.15)' : 'rgba(5, 11, 24, 0.7)',
+                    color: active ? '#65CFFF' : '#8199B5',
                   }}
                 >
                   {diff}
@@ -300,8 +268,8 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
             flex: 1,
             overflowY: 'auto',
             marginTop: '12px',
-            border: '1px solid rgba(0, 229, 255, 0.15)',
-            background: 'rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(0, 217, 255, 0.2)',
+            background: '#050B18',
           }}
         >
           {filteredEntries.length === 0 ? (
@@ -309,11 +277,12 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
               style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                color: 'var(--text-secondary)',
+                color: '#8199B5',
+                fontFamily: 'var(--font-mono)',
               }}
             >
-              <Trophy size={32} style={{ margin: '0 auto 10px', opacity: 0.4 }} />
-              <p className="pixel-text" style={{ fontSize: '0.7rem' }}>
+              <Trophy size={32} style={{ margin: '0 auto 10px', opacity: 0.4 }} color="#00D9FF" />
+              <p style={{ fontSize: '0.8rem' }}>
                 No leaderboard records matching selected filters.
               </p>
             </div>
@@ -330,12 +299,11 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
               <thead>
                 <tr
                   style={{
-                    background: '#121526',
-                    borderBottom: '2px solid rgba(0, 229, 255, 0.25)',
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.55rem',
+                    background: '#081426',
+                    borderBottom: '1px solid rgba(0, 217, 255, 0.25)',
+                    color: '#8199B5',
+                    fontSize: '0.65rem',
                     letterSpacing: '1px',
-                    fontFamily: 'var(--font-pixel)',
                   }}
                 >
                   <th style={{ padding: '8px 12px', width: '50px' }}>RANK</th>
@@ -350,110 +318,55 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
               <tbody>
                 {filteredEntries.map((item, index) => {
                   const rank = index + 1;
-                  const isTop3 = rank <= 3;
                   const rankColor =
-                    rank === 1 ? '#FFE600' : rank === 2 ? '#E0E0E0' : rank === 3 ? '#CD7F32' : 'var(--text-secondary)';
+                    rank === 1 ? '#EAF8FF' : rank === 2 ? '#B8D8EA' : rank === 3 ? '#65CFFF' : '#8199B5';
 
                   return (
                     <tr
                       key={item.id}
                       style={{
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                        background:
-                          rank === 1
-                            ? 'rgba(255, 230, 0, 0.06)'
-                            : rank % 2 === 0
-                            ? 'rgba(255, 255, 255, 0.02)'
-                            : 'transparent',
+                        borderBottom: '1px solid rgba(129, 153, 181, 0.1)',
+                        background: index % 2 === 0 ? 'rgba(8, 20, 38, 0.4)' : 'transparent',
                       }}
                     >
-                      {/* Rank badge */}
-                      <td style={{ padding: '8px 12px', fontWeight: 700 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: rankColor }}>
-                          {rank === 1 && <Crown size={13} color="#FFE600" />}
-                          {rank === 2 && <Medal size={13} color="#E0E0E0" />}
-                          {rank === 3 && <Medal size={13} color="#CD7F32" />}
-                          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '0.65rem' }}>
-                            #{rank}
+                      <td style={{ padding: '8px 12px', fontWeight: 700, color: rankColor }}>
+                        {rank === 1 ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#00D9FF' }}>
+                            <Crown size={12} /> #1
                           </span>
-                        </div>
+                        ) : rank <= 3 ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: rankColor }}>
+                            <Medal size={12} /> #{rank}
+                          </span>
+                        ) : (
+                          `#${rank}`
+                        )}
                       </td>
-
-                      {/* Callsign */}
-                      <td style={{ padding: '8px 12px', fontWeight: 600 }}>
-                        <span
-                          className="arcade-text"
-                          style={{
-                            fontSize: '0.6rem',
-                            color: isTop3 ? 'var(--neon-cyan)' : '#FFFFFF',
-                            letterSpacing: '1px',
-                          }}
-                        >
-                          {item.callsign}
-                        </span>
+                      <td style={{ padding: '8px 12px', fontWeight: 600, color: '#EAF8FF' }}>
+                        {item.callsign}
                       </td>
-
-                      {/* Score */}
-                      <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-pixel)',
-                            fontSize: '0.7rem',
-                            color: isTop3 ? 'var(--neon-yellow)' : '#FFF',
-                            textShadow: isTop3 ? '0 0 8px rgba(255, 230, 0, 0.4)' : 'none',
-                          }}
-                        >
-                          {formatScore(item.score)}
-                        </span>
+                      <td
+                        style={{
+                          padding: '8px 12px',
+                          textAlign: 'right',
+                          fontWeight: 700,
+                          color: '#00D9FF',
+                        }}
+                      >
+                        {formatScore(item.score)}
                       </td>
-
-                      {/* Solved Count */}
-                      <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                        <span style={{ color: 'var(--neon-green)', fontWeight: 700 }}>
-                          {item.totalSolved}
-                        </span>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#65CFFF' }}>
+                        {item.totalSolved}
                       </td>
-
-                      {/* Combo */}
-                      <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                        <span style={{ color: 'var(--neon-magenta)', fontWeight: 700 }}>
-                          x{item.maxCombo}
-                        </span>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#B8D8EA' }}>
+                        x{item.maxCombo}
                       </td>
-
-                      {/* Language & Topic */}
                       <td style={{ padding: '8px 12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span
-                            style={{
-                              fontSize: '0.55rem',
-                              padding: '1px 5px',
-                              borderRadius: '2px',
-                              textTransform: 'uppercase',
-                              fontWeight: 700,
-                              background: 'rgba(0, 229, 255, 0.1)',
-                              color: 'var(--neon-cyan)',
-                              border: '1px solid rgba(0, 229, 255, 0.3)',
-                            }}
-                          >
-                            {item.language}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '0.55rem',
-                              padding: '1px 5px',
-                              borderRadius: '2px',
-                              textTransform: 'uppercase',
-                              color: item.difficulty === 'hard' ? '#FF0055' : item.difficulty === 'easy' ? '#00FFA3' : '#FFE600',
-                            }}
-                          >
-                            {item.difficulty}
-                          </span>
-                        </div>
+                        <span className={`badge badge-${item.difficulty.toLowerCase()}`}>
+                          {item.difficulty}
+                        </span>
                       </td>
-
-                      {/* Date */}
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-secondary)', fontSize: '0.65rem' }}>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#8199B5', fontSize: '0.7rem' }}>
                         {new Date(item.timestamp).toLocaleDateString()}
                       </td>
                     </tr>
@@ -464,151 +377,104 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
           )}
         </div>
 
-        {/* ── Gist Settings Drawer ────────────────────────────────────── */}
-        <div style={{ marginTop: '8px' }}>
+        {/* ── Settings Accordion ──────────────────────────────────────── */}
+        <div style={{ marginTop: '14px', borderTop: '1px solid rgba(129, 153, 181, 0.15)', paddingTop: '10px' }}>
           <button
-            onClick={() => {
-              play('click');
-              setShowSettings(!showSettings);
-            }}
-            className="pixel-btn"
+            onClick={() => setShowSettings((v) => !v)}
             style={{
-              width: '100%',
+              background: 'none',
+              border: 'none',
+              color: '#8199B5',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '6px 12px',
-              fontSize: '0.55rem',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              background: '#121526',
+              gap: '6px',
+              fontSize: '0.7rem',
+              fontFamily: 'var(--font-mono)',
+              padding: '2px 0',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Settings size={12} color="var(--neon-cyan)" />
-              <span>SERVERLESS GIST SYNCHRONIZATION SETTINGS</span>
-            </div>
-            {showSettings ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            <Settings size={13} color="#00D9FF" />
+            <span>GitHub Gist Live Ledger Sync Settings</span>
+            {showSettings ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
 
           {showSettings && (
             <div
-              className="pixel-box"
               style={{
-                marginTop: '6px',
-                background: '#121526',
-                border: '1px solid rgba(0, 229, 255, 0.25)',
-                padding: '12px',
+                marginTop: '10px',
+                background: '#050B18',
+                border: '1px solid rgba(0, 217, 255, 0.25)',
+                padding: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
               }}
             >
-              <p
-                style={{
-                  margin: '0 0 10px',
-                  fontSize: '0.65rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.4,
-                }}
-              >
-                CodeDuel operates with zero backend databases. Link a public or secret GitHub Gist containing{' '}
-                <code>codeduel-leaderboard.json</code> to share scores globally across all devices.
-              </p>
+              <div style={{ fontSize: '0.7rem', color: '#8199B5' }}>
+                Optionally synchronize leaderboard scores across all devices by providing a GitHub Gist ID and personal access token (with `gist` permission).
+              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.55rem', fontFamily: 'var(--font-pixel)', color: '#FFF', marginBottom: '4px' }}>
-                    GITHUB GIST ID:
+                  <label style={{ fontSize: '0.65rem', color: '#8199B5', display: 'block', marginBottom: '4px' }}>
+                    GIST ID:
                   </label>
                   <input
                     type="text"
                     value={gistIdInput}
                     onChange={(e) => setGistIdInput(e.target.value)}
-                    placeholder="e.g. 7f8a9b0c1d2e3f4a5b6c"
+                    placeholder="e.g. 8f6b219a4..."
                     style={{
                       width: '100%',
                       padding: '6px 8px',
-                      background: '#090A0F',
-                      border: '1px solid rgba(0, 229, 255, 0.25)',
-                      color: '#FFF',
+                      background: '#081426',
+                      border: '1px solid rgba(0, 217, 255, 0.25)',
+                      color: '#EAF8FF',
                       fontFamily: 'var(--font-mono)',
-                      fontSize: '0.7rem',
+                      fontSize: '0.75rem',
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.55rem', fontFamily: 'var(--font-pixel)', color: '#FFF', marginBottom: '4px' }}>
-                    PERSONAL ACCESS TOKEN (OPTIONAL):
+                  <label style={{ fontSize: '0.65rem', color: '#8199B5', display: 'block', marginBottom: '4px' }}>
+                    GITHUB TOKEN (PAT):
                   </label>
                   <input
                     type="password"
                     value={gistTokenInput}
                     onChange={(e) => setGistTokenInput(e.target.value)}
-                    placeholder="ghp_xxxx (for publishing scores to Gist)"
+                    placeholder="ghp_..."
                     style={{
                       width: '100%',
                       padding: '6px 8px',
-                      background: '#090A0F',
-                      border: '1px solid rgba(0, 229, 255, 0.25)',
-                      color: '#FFF',
+                      background: '#081426',
+                      border: '1px solid rgba(0, 217, 255, 0.25)',
+                      color: '#EAF8FF',
                       fontFamily: 'var(--font-mono)',
-                      fontSize: '0.7rem',
+                      fontSize: '0.75rem',
                     }}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
-                <span style={{ fontSize: '0.65rem', color: 'var(--neon-green)', fontFamily: 'var(--font-mono)' }}>
-                  {settingsSavedToast && '✓ Gist configuration saved successfully!'}
-                </span>
-
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                {settingsSavedToast ? (
+                  <span style={{ fontSize: '0.7rem', color: '#00D9FF' }}>
+                    ✓ Settings updated! Reloading...
+                  </span>
+                ) : <span />}
                 <button
+                  className="btn-pixel-primary"
                   onClick={handleSaveSettings}
-                  className="pixel-btn pixel-btn-cyan"
-                  style={{
-                    padding: '5px 12px',
-                    fontSize: '0.6rem',
-                    cursor: 'pointer',
-                  }}
+                  style={{ padding: '6px 14px', fontSize: '0.75rem' }}
                 >
-                  SAVE GIST CONFIG
+                  Save Sync Configuration
                 </button>
               </div>
             </div>
           )}
-        </div>
-
-        {/* ── Modal Footer ────────────────────────────────────────────── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop: '12px',
-            paddingTop: '10px',
-            borderTop: '2px solid rgba(0, 229, 255, 0.25)',
-          }}
-        >
-          <span className="pixel-subtext" style={{ fontSize: '0.6rem' }}>
-            Showing {filteredEntries.length} player{filteredEntries.length === 1 ? '' : 's'} on record
-          </span>
-
-          <button
-            onClick={() => {
-              play('click');
-              onClose();
-            }}
-            className="pixel-btn"
-            style={{
-              padding: '6px 16px',
-              fontSize: '0.65rem',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-            }}
-          >
-            CLOSE
-          </button>
         </div>
       </div>
     </div>

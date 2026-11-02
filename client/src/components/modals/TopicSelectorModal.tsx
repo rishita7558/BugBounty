@@ -1,6 +1,6 @@
 /**
  * @file TopicSelectorModal.tsx
- * @description Retro pixel-art topic selection modal for CodeDuel: BugBounty Arena.
+ * @description Topic selection modal for CodeDuel: BugBounty Arena — ICE MATRIX edition.
  * Allows players to choose their target programming language (JS, TS, Python) and vulnerability domain,
  * displaying pedagogical bug archetypes and difficulty tiers.
  */
@@ -25,7 +25,9 @@ import {
   FileCode,
   Shield,
   Layers,
-  Bug,
+  Cpu,
+  Database,
+  Box,
 } from 'lucide-react';
 
 export interface TopicSelectorModalProps {
@@ -51,6 +53,7 @@ export function TopicSelectorModal({
   const { play } = useAudioSFX();
   const [selectedLang, setSelectedLang] = useState<SupportedLanguage>(activeLanguage);
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | ChallengeDifficulty>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'dsa' | 'logic' | 'security' | 'async' | 'memory' | 'types'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const languages = useMemo(() => getAllLanguages(), []);
@@ -61,6 +64,10 @@ export function TopicSelectorModal({
 
     if (difficultyFilter !== 'all') {
       list = list.filter((t) => t.difficulty === difficultyFilter);
+    }
+
+    if (categoryFilter !== 'all') {
+      list = list.filter((t) => t.category === categoryFilter);
     }
 
     if (searchQuery.trim()) {
@@ -75,7 +82,7 @@ export function TopicSelectorModal({
     }
 
     return list;
-  }, [selectedLang, difficultyFilter, searchQuery]);
+  }, [selectedLang, difficultyFilter, categoryFilter, searchQuery]);
 
   if (!open) return null;
 
@@ -104,12 +111,12 @@ export function TopicSelectorModal({
   const getDiffBadgeStyle = (diff: ChallengeDifficulty) => {
     switch (diff) {
       case 'easy':
-        return { color: '#00FFA3', border: '1px solid #00FFA3', background: 'rgba(0, 255, 163, 0.1)' };
+        return { color: '#00D9FF', border: '1px solid rgba(0, 217, 255, 0.4)', background: 'rgba(0, 217, 255, 0.12)' };
       case 'hard':
-        return { color: '#FF0055', border: '1px solid #FF0055', background: 'rgba(255, 0, 85, 0.1)' };
+        return { color: '#B8D8EA', border: '1px solid rgba(40, 123, 255, 0.4)', background: 'rgba(40, 123, 255, 0.15)' };
       case 'medium':
       default:
-        return { color: '#FFE600', border: '1px solid #FFE600', background: 'rgba(255, 230, 0, 0.1)' };
+        return { color: '#65CFFF', border: '1px solid rgba(101, 207, 255, 0.4)', background: 'rgba(101, 207, 255, 0.12)' };
     }
   };
 
@@ -122,22 +129,25 @@ export function TopicSelectorModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(5, 11, 24, 0.88)',
+        backdropFilter: 'blur(12px)',
         padding: '16px',
       }}
       onClick={onClose}
     >
       <div
-        className="pixel-box pixel-box-cyan animate-in fade-in zoom-in-95"
+        className="pixel-box hud-corner-brackets"
         style={{
           width: '100%',
-          maxWidth: '820px',
+          maxWidth: '840px',
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          background: '#090A0F',
+          background: 'rgba(8, 20, 38, 0.96)',
+          border: '1px solid rgba(0, 217, 255, 0.4)',
+          boxShadow: '0 24px 60px rgba(5, 11, 24, 0.9), 0 0 35px rgba(0, 217, 255, 0.2)',
           overflow: 'hidden',
+          padding: '24px',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -148,18 +158,18 @@ export function TopicSelectorModal({
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingBottom: '14px',
-            borderBottom: '2px solid rgba(0, 229, 255, 0.25)',
+            borderBottom: '1px solid rgba(0, 217, 255, 0.2)',
           }}
         >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Layers size={18} color="var(--neon-cyan)" />
-              <h2 className="pixel-title" style={{ fontSize: '1rem', margin: 0 }}>
-                SELECT CHALLENGE TOPIC
+              <Layers size={18} color="#00D9FF" />
+              <h2 className="arcade-text neon-text" style={{ fontSize: '0.85rem', margin: 0 }}>
+                SELECT VULNERABILITY ARCHETYPE
               </h2>
             </div>
-            <p className="pixel-subtext" style={{ marginTop: '4px', margin: 0, fontSize: '0.6rem' }}>
-              Pick a programming language & vulnerability domain for targeted AI generation.
+            <p style={{ marginTop: '4px', margin: 0, fontSize: '0.7rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>
+              Configure runtime language & vulnerability taxonomy for procedural arena challenges.
             </p>
           </div>
 
@@ -168,16 +178,16 @@ export function TopicSelectorModal({
               play('click');
               onClose();
             }}
-            className="pixel-btn"
             style={{
-              padding: '6px 10px',
-              fontSize: '0.7rem',
-              color: 'var(--text-secondary)',
+              background: 'transparent',
+              border: 'none',
+              color: '#8199B5',
               cursor: 'pointer',
+              padding: '4px',
             }}
             aria-label="Close modal"
           >
-            <X size={16} />
+            <X size={20} />
           </button>
         </div>
 
@@ -186,7 +196,7 @@ export function TopicSelectorModal({
           style={{
             display: 'flex',
             gap: '8px',
-            marginTop: '14px',
+            marginTop: '16px',
             flexWrap: 'wrap',
           }}
         >
@@ -197,89 +207,113 @@ export function TopicSelectorModal({
               <button
                 key={lang}
                 onClick={() => handleLangTab(lang)}
-                className={`pixel-btn ${isSelected ? 'pixel-btn-cyan' : ''}`}
+                className="btn-pixel-cyber"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
                   padding: '8px 16px',
-                  fontSize: '0.65rem',
-                  fontFamily: 'var(--font-pixel)',
-                  cursor: 'pointer',
-                  border: isSelected ? `2px solid ${meta.color}` : '2px solid rgba(255, 255, 255, 0.15)',
-                  background: isSelected ? 'rgba(0, 229, 255, 0.12)' : 'rgba(18, 21, 38, 0.8)',
-                  color: isSelected ? meta.color : 'var(--text-secondary)',
-                  boxShadow: isSelected ? `0 0 12px ${meta.color}40` : 'none',
+                  fontSize: '0.75rem',
+                  borderColor: isSelected ? '#00D9FF' : 'rgba(129, 153, 181, 0.25)',
+                  background: isSelected ? 'rgba(0, 217, 255, 0.15)' : 'rgba(5, 11, 24, 0.7)',
+                  color: isSelected ? '#00D9FF' : '#8199B5',
+                  boxShadow: isSelected ? '0 0 12px rgba(0, 217, 255, 0.3)' : 'none',
                 }}
               >
-                {lang === 'javascript' && <FileCode size={14} color={isSelected ? meta.color : undefined} />}
-                {lang === 'typescript' && <Shield size={14} color={isSelected ? meta.color : undefined} />}
-                {lang === 'python' && <Terminal size={14} color={isSelected ? meta.color : undefined} />}
+                {lang === 'javascript' && <FileCode size={14} color={isSelected ? '#00D9FF' : undefined} />}
+                {lang === 'typescript' && <Shield size={14} color={isSelected ? '#00D9FF' : undefined} />}
+                {lang === 'python' && <Terminal size={14} color={isSelected ? '#00D9FF' : undefined} />}
+                {lang === 'rust' && <Shield size={14} color={isSelected ? '#00D9FF' : undefined} />}
+                {lang === 'go' && <Terminal size={14} color={isSelected ? '#00D9FF' : undefined} />}
+                {lang === 'cpp' && <Cpu size={14} color={isSelected ? '#00D9FF' : undefined} />}
+                {lang === 'java' && <Box size={14} color={isSelected ? '#00D9FF' : undefined} />}
+                {lang === 'sql' && <Database size={14} color={isSelected ? '#00D9FF' : undefined} />}
                 <span>{meta.label}</span>
                 <span
                   style={{
-                    fontSize: '0.5rem',
-                    opacity: 0.7,
-                    padding: '2px 4px',
+                    fontSize: '0.65rem',
+                    opacity: 0.8,
+                    background: 'rgba(0, 217, 255, 0.12)',
+                    padding: '1px 6px',
                     borderRadius: '2px',
-                    background: 'rgba(0,0,0,0.4)',
                   }}
                 >
-                  {meta.version}
+                  {getTopicsByLanguage(lang).length}
                 </span>
               </button>
             );
           })}
+
+          <button
+            onClick={handleRandomSelect}
+            className="btn-pixel-primary"
+            style={{
+              marginLeft: 'auto',
+              padding: '8px 16px',
+              fontSize: '0.75rem',
+            }}
+          >
+            <Sparkles size={14} /> Random Topic
+          </button>
         </div>
 
         {/* ── Search & Filter Controls ────────────────────────────────── */}
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
             gap: '12px',
-            marginTop: '12px',
+            marginTop: '14px',
             flexWrap: 'wrap',
+            alignItems: 'center',
           }}
         >
-          {/* Keyword search input */}
+          {/* Search Input */}
           <div
             style={{
-              position: 'relative',
               flex: 1,
-              minWidth: '200px',
+              minWidth: '220px',
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
             <Search
               size={14}
-              style={{
-                position: 'absolute',
-                left: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-secondary)',
-              }}
+              color="#8199B5"
+              style={{ position: 'absolute', left: '10px', pointerEvents: 'none' }}
             />
             <input
               type="text"
+              placeholder={`Search ${currentMeta.label} vulnerabilities...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter topics, keywords, tags..."
               style={{
                 width: '100%',
-                padding: '6px 10px 6px 30px',
-                background: '#121526',
-                border: '1px solid rgba(0, 229, 255, 0.25)',
-                color: '#fff',
+                padding: '8px 10px 8px 32px',
+                background: '#050B18',
+                border: '1px solid rgba(0, 217, 255, 0.25)',
+                color: '#EAF8FF',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '0.75rem',
-                outline: 'none',
+                fontSize: '0.8rem',
               }}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  background: 'none',
+                  border: 'none',
+                  color: '#8199B5',
+                  cursor: 'pointer',
+                  padding: '2px',
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
-          {/* Difficulty filter buttons */}
-          <div style={{ display: 'flex', gap: '4px' }}>
+          {/* Difficulty Filter Chips */}
+          <div style={{ display: 'flex', gap: '6px' }}>
             {(['all', 'easy', 'medium', 'hard'] as const).map((diff) => {
               const active = difficultyFilter === diff;
               return (
@@ -289,23 +323,50 @@ export function TopicSelectorModal({
                     play('click');
                     setDifficultyFilter(diff);
                   }}
-                  className="pixel-btn"
+                  className="btn-pixel-cyber"
                   style={{
-                    padding: '5px 8px',
-                    fontSize: '0.55rem',
-                    fontFamily: 'var(--font-pixel)',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    background: active ? 'rgba(0, 229, 255, 0.2)' : 'transparent',
-                    border: active ? '1px solid var(--neon-cyan)' : '1px solid rgba(255,255,255,0.1)',
-                    color: active ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                    padding: '6px 12px',
+                    fontSize: '0.7rem',
+                    borderColor: active ? '#00D9FF' : 'rgba(129, 153, 181, 0.25)',
+                    background: active ? 'rgba(0, 217, 255, 0.15)' : 'rgba(5, 11, 24, 0.7)',
+                    color: active ? '#00D9FF' : '#8199B5',
                   }}
                 >
-                  {diff}
+                  {diff.toUpperCase()}
                 </button>
               );
             })}
           </div>
+        </div>
+
+        {/* ── Category Domain Filter Chips ────────────────────────────── */}
+        <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.65rem', color: '#8199B5', fontFamily: 'var(--font-mono)', marginRight: '4px' }}>
+            DOMAIN:
+          </span>
+          {(['all', 'dsa', 'logic', 'security', 'async', 'memory', 'types'] as const).map((cat) => {
+            const active = categoryFilter === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => {
+                  play('click');
+                  setCategoryFilter(cat);
+                }}
+                className="btn-pixel-cyber"
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.68rem',
+                  borderColor: active ? (cat === 'dsa' ? '#00D9FF' : '#65CFFF') : 'rgba(129, 153, 181, 0.25)',
+                  background: active ? (cat === 'dsa' ? 'rgba(0, 217, 255, 0.25)' : 'rgba(101, 207, 255, 0.15)') : 'rgba(5, 11, 24, 0.7)',
+                  color: active ? (cat === 'dsa' ? '#00D9FF' : '#EAF8FF') : '#8199B5',
+                  fontWeight: cat === 'dsa' ? 800 : 600,
+                }}
+              >
+                {cat === 'dsa' ? '⚡ DSA (ALGORITHMS)' : cat.toUpperCase()}
+              </button>
+            );
+          })}
         </div>
 
         {/* ── Topic Cards Grid ────────────────────────────────────────── */}
@@ -313,11 +374,11 @@ export function TopicSelectorModal({
           style={{
             flex: 1,
             overflowY: 'auto',
-            marginTop: '14px',
-            paddingRight: '6px',
+            marginTop: '16px',
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
             gap: '12px',
+            paddingRight: '4px',
           }}
         >
           {filteredTopics.length === 0 ? (
@@ -325,233 +386,100 @@ export function TopicSelectorModal({
               style={{
                 gridColumn: '1 / -1',
                 textAlign: 'center',
-                padding: '40px 20px',
-                color: 'var(--text-secondary)',
+                padding: '36px',
+                color: '#8199B5',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.85rem',
               }}
             >
-              <Bug size={32} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
-              <p className="pixel-text" style={{ fontSize: '0.7rem' }}>
-                No topics matching "{searchQuery}"
-              </p>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setDifficultyFilter('all');
-                }}
-                className="pixel-btn pixel-btn-cyan"
-                style={{ marginTop: '12px', padding: '6px 12px', fontSize: '0.6rem' }}
-              >
-                CLEAR FILTERS
-              </button>
+              No vulnerability domains match your search query.
             </div>
           ) : (
             filteredTopics.map((topic) => {
               const isActive = activeTopicId === topic.id;
-              const diffStyle = getDiffBadgeStyle(topic.difficulty);
-
+              const badgeStyle = getDiffBadgeStyle(topic.difficulty);
               return (
                 <div
                   key={topic.id}
                   onClick={() => handleSelect(topic)}
                   className="pixel-box"
                   style={{
-                    background: isActive ? 'rgba(0, 229, 255, 0.08)' : '#121526',
-                    border: isActive ? '2px solid var(--neon-cyan)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '14px',
                     cursor: 'pointer',
-                    padding: '12px',
+                    background: isActive ? 'rgba(0, 217, 255, 0.12)' : 'rgba(5, 11, 24, 0.75)',
+                    border: isActive ? '1px solid #00D9FF' : '1px solid rgba(0, 217, 255, 0.2)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    boxShadow: isActive ? '0 0 14px rgba(0, 229, 255, 0.3)' : 'none',
-                    transition: 'transform 0.15s ease, border-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    if (!isActive) e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.5)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    if (!isActive) e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    gap: '10px',
+                    transition: 'all 0.2s',
                   }}
                 >
                   <div>
-                    {/* Header: Title + Badges */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-                      <h3
-                        className="pixel-text"
-                        style={{
-                          fontSize: '0.7rem',
-                          color: isActive ? 'var(--neon-cyan)' : '#FFFFFF',
-                          margin: 0,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {topic.name}
-                      </h3>
-                      <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span
                           style={{
-                            fontSize: '0.5rem',
+                            fontSize: '0.62rem',
                             fontFamily: 'var(--font-mono)',
-                            padding: '2px 5px',
-                            borderRadius: '3px',
-                            textTransform: 'uppercase',
                             fontWeight: 700,
-                            ...diffStyle,
+                            padding: '2px 6px',
+                            borderRadius: '2px',
+                            ...badgeStyle,
                           }}
                         >
-                          {topic.difficulty}
+                          {topic.difficulty.toUpperCase()}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.6rem',
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '2px',
+                            color: topic.category === 'dsa' ? '#00D9FF' : '#8199B5',
+                            background: topic.category === 'dsa' ? 'rgba(0, 217, 255, 0.15)' : 'rgba(129, 153, 181, 0.1)',
+                            border: `1px solid ${topic.category === 'dsa' ? 'rgba(0, 217, 255, 0.35)' : 'rgba(129, 153, 181, 0.2)'}`,
+                          }}
+                        >
+                          {topic.category === 'dsa' ? '⚡ DSA' : topic.category.toUpperCase()}
                         </span>
                       </div>
+                      {isActive && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#00D9FF', fontSize: '0.65rem' }}>
+                          <CheckCircle2 size={12} /> ACTIVE
+                        </span>
+                      )}
                     </div>
-
-                    {/* Description */}
-                    <p
-                      style={{
-                        margin: '8px 0',
-                        fontSize: '0.72rem',
-                        lineHeight: 1.4,
-                        color: 'var(--text-secondary)',
-                        fontFamily: 'var(--font-mono)',
-                      }}
-                    >
+                    <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#EAF8FF', margin: 0, fontFamily: 'var(--font-heading)' }}>
+                      {topic.name}
+                    </h3>
+                    <p style={{ fontSize: '0.72rem', color: '#8199B5', marginTop: '4px', lineHeight: 1.4 }}>
                       {topic.description}
                     </p>
-
-                    {/* Common Bug Traps list */}
-                    <div
-                      style={{
-                        background: 'rgba(0, 0, 0, 0.35)',
-                        borderLeft: '2px solid rgba(0, 229, 255, 0.4)',
-                        padding: '6px 8px',
-                        marginBottom: '8px',
-                        fontSize: '0.65rem',
-                        fontFamily: 'var(--font-mono)',
-                        color: '#b0b0c8',
-                      }}
-                    >
-                      <div style={{ color: 'var(--neon-yellow)', fontSize: '0.55rem', fontWeight: 700, marginBottom: '2px' }}>
-                        TARGET BUGS:
-                      </div>
-                      <div style={{ fontStyle: 'italic' }}>
-                        • {topic.commonBugs[0]}
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Footer tags & Select status */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginTop: '8px',
-                      paddingTop: '8px',
-                      borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                      {topic.tags.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          style={{
-                            fontSize: '0.55rem',
-                            color: 'var(--text-secondary)',
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            padding: '1px 5px',
-                            borderRadius: '2px',
-                            fontFamily: 'var(--font-mono)',
-                          }}
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelect(topic);
-                      }}
-                      className={`pixel-btn ${isActive ? 'pixel-btn-cyan' : ''}`}
-                      style={{
-                        fontSize: '0.55rem',
-                        padding: '4px 10px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}
-                    >
-                      {isActive ? (
-                        <>
-                          <CheckCircle2 size={12} color="var(--neon-cyan)" />
-                          ACTIVE
-                        </>
-                      ) : (
-                        'SELECT'
-                      )}
-                    </button>
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    {topic.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        style={{
+                          fontSize: '0.6rem',
+                          color: '#65CFFF',
+                          background: 'rgba(0, 217, 255, 0.08)',
+                          border: '1px solid rgba(0, 217, 255, 0.2)',
+                          padding: '1px 5px',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        #{tag}
+                      </span>
+                    ))}
                   </div>
                 </div>
               );
             })
           )}
-        </div>
-
-        {/* ── Modal Footer ────────────────────────────────────────────── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop: '16px',
-            paddingTop: '12px',
-            borderTop: '2px solid rgba(0, 229, 255, 0.25)',
-            flexWrap: 'wrap',
-            gap: '8px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="pixel-subtext" style={{ fontSize: '0.6rem' }}>
-              Current: <strong style={{ color: currentMeta.color }}>{currentMeta.label}</strong> (
-              {filteredTopics.length} topic{filteredTopics.length === 1 ? '' : 's'})
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={handleRandomSelect}
-              className="pixel-btn pixel-btn-magenta"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                fontSize: '0.65rem',
-                cursor: 'pointer',
-              }}
-            >
-              <Sparkles size={13} />
-              RANDOM TOPIC
-            </button>
-
-            <button
-              onClick={() => {
-                play('click');
-                onClose();
-              }}
-              className="pixel-btn"
-              style={{
-                padding: '6px 14px',
-                fontSize: '0.65rem',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              CLOSE
-            </button>
-          </div>
         </div>
       </div>
     </div>

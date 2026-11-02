@@ -70,6 +70,20 @@ export interface Badge {
 }
 
 /**
+ * Persistent question history record preventing question repetition across sessions.
+ */
+export interface ClientQuestionHistory {
+  id: string;
+  fingerprint: string;
+  title: string;
+  language: string;
+  topic: string;
+  difficulty: string;
+  challengeStyle: string;
+  timestamp: number;
+}
+
+/**
  * Dexie database class declaring local table schemas.
  */
 export class CodeDuelDatabase extends Dexie {
@@ -78,9 +92,11 @@ export class CodeDuelDatabase extends Dexie {
   highScores!: Table<HighScore, number>;
   runHistory!: Table<RunHistory, number>;
   badges!: Table<Badge, number>;
+  questionHistory!: Table<ClientQuestionHistory, string>;
 
   constructor() {
     super('CodeDuelArenaDB');
+    // Version 1: original schema — keep intact for upgrade path
     this.version(1).stores({
       solvedChallenges: 'id, difficulty, bountyPointsEarned, solvedAt',
       profile: 'id, callsign, totalScore',
@@ -88,10 +104,65 @@ export class CodeDuelDatabase extends Dexie {
       runHistory: '++id, challengeId, timestamp, correct',
       badges: '++id, name, unlockedAt',
     });
+    // Version 2: adds questionHistory table for persistent no-repetition tracking
+    this.version(2).stores({
+      solvedChallenges: 'id, difficulty, bountyPointsEarned, solvedAt',
+      profile: 'id, callsign, totalScore',
+      highScores: '++id, score, playerName, timestamp',
+      runHistory: '++id, challengeId, timestamp, correct',
+      badges: '++id, name, unlockedAt',
+      questionHistory: 'id, fingerprint, language, topic, difficulty, timestamp',
+    });
   }
 }
 
 export const db = new CodeDuelDatabase();
+
+/**
+ * Records a generated challenge into local IndexedDB question history.
+ */
+export async function recordClientQuestion(ch: {
+  id: string;
+  fingerprint?: string;
+  title: string;
+  language?: string;
+  topic?: string;
+  difficulty?: string;
+  challengeStyle?: string;
+}): Promise<void> {
+  try {
+    await db.questionHistory.put({
+      id: ch.id,
+      fingerprint: ch.fingerprint || ch.id,
+      title: ch.title,
+      language: ch.language || 'javascript',
+      topic: ch.topic || 'general',
+      difficulty: ch.difficulty || 'medium',
+      challengeStyle: ch.challengeStyle || 'fix-the-code',
+      timestamp: Date.now(),
+    });
+  } catch (err) {
+    console.warn('[IndexedDB] Failed to record question in history:', err);
+  }
+}
+
+/**
+ * Retrieves recently generated challenge IDs and fingerprints to enforce non-repetition.
+ */
+export async function getClientQuestionExclusions(): Promise<{
+  excludeIds: string[];
+  recentFingerprints: string[];
+}> {
+  try {
+    const records = await db.questionHistory.orderBy('timestamp').reverse().limit(50).toArray();
+    return {
+      excludeIds: records.map((r) => r.id),
+      recentFingerprints: records.map((r) => r.fingerprint).filter(Boolean),
+    };
+  } catch {
+    return { excludeIds: [], recentFingerprints: [] };
+  }
+}
 
 const DEFAULT_PROFILE_ID = 'local-player';
 

@@ -1,6 +1,6 @@
 /**
  * @file ArcadeTimer.tsx
- * @description Compact digital countdown timer widget with CRT overlay styling.
+ * @description Compact digital countdown timer widget with CRT overlay styling — ICE MATRIX edition.
  * Displays formatted remaining challenge time and visually alerts players when the clock expires.
  */
 
@@ -19,10 +19,12 @@ export function ArcadeTimer() {
   const isWarning = timeRemaining <= 15 && timeRemaining > 0;
   const isCritical = timeRemaining <= 5 && timeRemaining > 0;
 
+  const timerColor = isCritical ? '#FF3B69' : isWarning ? '#65CFFF' : '#00D9FF';
+
   return (
     <div className="crt-overlay" style={{ position: 'relative' }}>
       <div
-        className="glass-card"
+        className="pixel-box"
         style={{
           padding: '16px 24px',
           display: 'flex',
@@ -30,32 +32,30 @@ export function ArcadeTimer() {
           alignItems: 'center',
           gap: '4px',
           minWidth: '140px',
+          background: 'rgba(8, 20, 38, 0.9)',
+          border: '1px solid rgba(0, 217, 255, 0.3)',
         }}
       >
         <span
           className="arcade-text"
           style={{
             fontSize: '0.55rem',
-            color: 'var(--text-secondary)',
+            color: '#8199B5',
             letterSpacing: '3px',
           }}
         >
           ⏱ TIME
         </span>
         <span
-          className={`arcade-text ${isCritical ? 'animate-timer-warning' : ''}`}
+          className="arcade-text"
           style={{
             fontSize: '1.6rem',
-            color: isCritical
-              ? 'var(--neon-red)'
-              : isWarning
-              ? 'var(--neon-yellow)'
-              : 'var(--neon-cyan)',
+            color: timerColor,
             textShadow: isCritical
-              ? '0 0 20px rgba(255, 0, 60, 0.8)'
+              ? '0 0 20px rgba(255, 59, 105, 0.9)'
               : isWarning
-              ? '0 0 15px rgba(255, 230, 0, 0.6)'
-              : '0 0 15px rgba(0, 240, 255, 0.5)',
+              ? '0 0 15px rgba(101, 207, 255, 0.7)'
+              : '0 0 15px rgba(0, 217, 255, 0.6)',
             transition: 'color 0.3s, text-shadow 0.3s',
           }}
         >
@@ -65,7 +65,7 @@ export function ArcadeTimer() {
           <span
             style={{
               fontSize: '0.6rem',
-              color: 'var(--neon-yellow)',
+              color: '#B8D8EA',
               fontFamily: 'var(--font-mono)',
             }}
           >
@@ -79,9 +79,8 @@ export function ArcadeTimer() {
         <div
           style={{
             position: 'absolute',
-            inset: '-2px',
-            borderRadius: 'var(--radius-lg)',
-            border: `2px solid ${isCritical ? 'var(--neon-red)' : 'var(--neon-yellow)'}`,
+            inset: '-1px',
+            border: `1px solid ${timerColor}`,
             opacity: 0.6,
             pointerEvents: 'none',
           }}

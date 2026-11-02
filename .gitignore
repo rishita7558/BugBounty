@@ -9,3 +9,5 @@ Thumbs.db
 coverage/
 .turbo/
 .vscode/
+server/data/*.json
+!server/data/.gitkeep

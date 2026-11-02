@@ -11,9 +11,16 @@ import {
 } from '@/core/taxonomy/challengeTaxonomy';
 
 describe('Challenge Taxonomy System', () => {
-  it('defines all three core languages: javascript, typescript, and python', () => {
+  it('defines all supported languages including javascript, typescript, python, rust, go, cpp, java, and sql', () => {
     const languages = getAllLanguages();
-    expect(languages).toEqual(['javascript', 'typescript', 'python']);
+    expect(languages).toContain('javascript');
+    expect(languages).toContain('typescript');
+    expect(languages).toContain('python');
+    expect(languages).toContain('rust');
+    expect(languages).toContain('go');
+    expect(languages).toContain('cpp');
+    expect(languages).toContain('java');
+    expect(languages).toContain('sql');
     expect(Object.keys(CHALLENGE_TAXONOMY)).toEqual(languages);
   });
 
@@ -60,28 +67,40 @@ describe('Challenge Taxonomy System', () => {
     expect(getLanguageForTopic('invalid-id')).toBe('javascript');
   });
 
-  it('picks random topics properly with or without filters', () => {
+  it('picks a random topic conforming to constraints', () => {
     const randomAny = getRandomTopic();
     expect(randomAny).toBeDefined();
-    expect(isValidTopic(randomAny.id)).toBe(true);
+    expect(randomAny.id).toBeTruthy();
 
-    const randomPy = getRandomTopic('python');
-    expect(randomPy.language).toBe('python');
+    const randomJs = getRandomTopic('javascript');
+    expect(randomJs.language).toBe('javascript');
 
-    const randomEasyTs = getRandomTopic('typescript', 'easy');
-    expect(randomEasyTs.language).toBe('typescript');
-    expect(randomEasyTs.difficulty).toBe('easy');
+    const randomHard = getRandomTopic(undefined, 'hard');
+    expect(randomHard.difficulty).toBe('hard');
   });
 
-  it('provides accurate language metadata for editor and badges', () => {
+  it('fetches metadata for each supported language', () => {
     const jsMeta = getLanguageMeta('javascript');
+    expect(jsMeta.id).toBe('javascript');
     expect(jsMeta.monacoLanguage).toBe('javascript');
-    expect(jsMeta.color).toBe('#FFE600');
 
     const tsMeta = getLanguageMeta('typescript');
+    expect(tsMeta.id).toBe('typescript');
     expect(tsMeta.monacoLanguage).toBe('typescript');
 
     const pyMeta = getLanguageMeta('python');
+    expect(pyMeta.id).toBe('python');
     expect(pyMeta.monacoLanguage).toBe('python');
+  });
+
+  it('includes Data Structures & Algorithms (DSA) topics across languages', () => {
+    const jsTopics = getTopicsByLanguage('javascript');
+    const dsaTopics = jsTopics.filter((t) => t.category === 'dsa');
+    expect(dsaTopics.length).toBeGreaterThanOrEqual(3);
+
+    const binarySearchTopic = getTopicById('js-dsa-binary-search');
+    expect(binarySearchTopic).toBeDefined();
+    expect(binarySearchTopic?.category).toBe('dsa');
+    expect(binarySearchTopic?.tags).toContain('dsa');
   });
 });

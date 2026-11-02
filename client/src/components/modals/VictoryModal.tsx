@@ -1,7 +1,7 @@
 /**
  * @file VictoryModal.tsx
- * @description Celebratory modal dialog presented upon successfully resolving a bug challenge.
- * Displays particle confetti, itemized OOP scoring breakdowns, daily streak updates,
+ * @description Celebratory modal dialog presented upon successfully resolving a bug challenge — ICE MATRIX edition.
+ * Displays crystalline particle confetti, itemized OOP scoring breakdowns, daily streak updates,
  * automatically persists progress to IndexedDB (Dexie), and opens printable arcade ticket redemption.
  */
 
@@ -17,11 +17,12 @@ import {
   Zap,
   Clock,
   Lightbulb,
-  Flame,
+  ShieldCheck,
   Award,
   ChevronRight,
   Ticket,
   Play,
+  CheckCircle2,
 } from 'lucide-react';
 
 /**
@@ -57,14 +58,14 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
 
   useEffect(() => {
     if (phase === 'victory' && review && challenge) {
-      // Trigger confetti celebration once per victory
+      // Trigger crystalline ice confetti celebration once per victory
       if (!confettiFiredRef.current) {
         confettiFiredRef.current = true;
         confetti({
-          particleCount: 150,
-          spread: 80,
+          particleCount: 160,
+          spread: 90,
           origin: { y: 0.6 },
-          colors: ['#00f0ff', '#ff00e5', '#39ff14', '#ffe600'],
+          colors: ['#00D9FF', '#65CFFF', '#287BFF', '#EAF8FF', '#B8D8EA'],
         });
       }
 
@@ -138,38 +139,45 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'rgba(0, 0, 0, 0.78)',
-          backdropFilter: 'blur(8px)',
+          background: 'rgba(5, 11, 24, 0.88)',
+          backdropFilter: 'blur(12px)',
         }}
       >
         <div
-          className="glass-card animate-score-pop"
+          className="pixel-box hud-corner-brackets animate-score-pop"
           style={{
             padding: '36px',
-            maxWidth: '520px',
+            maxWidth: '540px',
             width: '92%',
             textAlign: 'center',
-            border: '1px solid rgba(57, 255, 20, 0.4)',
-            boxShadow: 'var(--glow-green)',
+            background: 'rgba(8, 20, 38, 0.95)',
+            border: '1px solid rgba(0, 217, 255, 0.45)',
+            boxShadow: '0 24px 60px rgba(5, 11, 24, 0.9), 0 0 35px rgba(0, 217, 255, 0.2)',
             maxHeight: '90vh',
             overflowY: 'auto',
           }}
         >
+          {/* Status Label */}
+          <div className="pixel-status-badge" style={{ marginBottom: '12px' }}>
+            REMEDIATION PROTOCOL: SUCCESS
+          </div>
+
           {/* Title banner */}
           <div
-            className="arcade-text neon-text-green"
+            className="arcade-text neon-text"
             style={{ fontSize: '1.25rem', marginBottom: '6px' }}
           >
-            🎯 BUG SQUASHED!
+            VULNERABILITY NEUTRALIZED
           </div>
           <div
             style={{
-              color: 'var(--text-secondary)',
+              color: '#8199B5',
               marginBottom: '20px',
               fontSize: '0.85rem',
+              fontFamily: 'var(--font-mono)',
             }}
           >
-            {challenge?.title}
+            TARGET: {challenge?.title}
           </div>
 
           {/* Performance badges summary */}
@@ -181,61 +189,86 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
               marginBottom: '20px',
             }}
           >
-            <div className="glass-card" style={{ padding: '12px' }}>
+            <div
+              className="pixel-box"
+              style={{
+                padding: '12px',
+                background: 'rgba(5, 11, 24, 0.75)',
+                border: '1px solid rgba(0, 217, 255, 0.25)',
+              }}
+            >
               <div
                 style={{
                   fontSize: '0.62rem',
-                  color: 'var(--text-muted)',
+                  color: '#8199B5',
                   marginBottom: '4px',
+                  fontFamily: 'var(--font-mono)',
                 }}
               >
-                POINTS WON
+                BOUNTY WON
               </div>
               <div
-                className="neon-text"
-                style={{ fontSize: '1.35rem', fontWeight: 700 }}
+                className="arcade-text"
+                style={{ fontSize: '1.25rem', color: '#00D9FF' }}
               >
                 +{review.score}
               </div>
             </div>
 
-            <div className="glass-card" style={{ padding: '12px' }}>
+            <div
+              className="pixel-box"
+              style={{
+                padding: '12px',
+                background: 'rgba(5, 11, 24, 0.75)',
+                border: '1px solid rgba(0, 217, 255, 0.25)',
+              }}
+            >
               <div
                 style={{
                   fontSize: '0.62rem',
-                  color: 'var(--text-muted)',
+                  color: '#8199B5',
                   marginBottom: '4px',
+                  fontFamily: 'var(--font-mono)',
                 }}
               >
                 COMBO
               </div>
-              <div className="combo-display" style={{ fontSize: '1.35rem' }}>
+              <div className="combo-display" style={{ fontSize: '1.25rem' }}>
                 x{combo}
               </div>
             </div>
 
-            <div className="glass-card" style={{ padding: '12px' }}>
+            <div
+              className="pixel-box"
+              style={{
+                padding: '12px',
+                background: 'rgba(5, 11, 24, 0.75)',
+                border: '1px solid rgba(0, 217, 255, 0.25)',
+              }}
+            >
               <div
                 style={{
                   fontSize: '0.62rem',
-                  color: 'var(--text-muted)',
+                  color: '#8199B5',
                   marginBottom: '4px',
+                  fontFamily: 'var(--font-mono)',
                 }}
               >
                 DAILY STREAK
               </div>
               <div
                 style={{
-                  fontSize: '1.35rem',
+                  fontSize: '1.25rem',
                   fontWeight: 700,
-                  color: 'var(--neon-yellow)',
+                  color: '#65CFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '4px',
+                  fontFamily: 'var(--font-mono)',
                 }}
               >
-                🔥 {currentStreak}
+                <ShieldCheck size={16} color="#65CFFF" /> {currentStreak}D
               </div>
             </div>
           </div>
@@ -244,9 +277,8 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
           {breakdown && (
             <div
               style={{
-                background: 'rgba(0, 0, 0, 0.35)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
+                background: 'rgba(5, 11, 24, 0.8)',
+                border: '1px solid rgba(0, 217, 255, 0.2)',
                 padding: '16px',
                 marginBottom: '20px',
                 textAlign: 'left',
@@ -258,27 +290,27 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                 className="arcade-text"
                 style={{
                   fontSize: '0.6rem',
-                  color: 'var(--neon-cyan)',
+                  color: '#00D9FF',
                   marginBottom: '10px',
                   letterSpacing: '1px',
                 }}
               >
-                📊 SCORING ENGINE BREAKDOWN
+                SCORING ENGINE BREAKDOWN
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span
                     style={{
-                      color: 'var(--text-secondary)',
+                      color: '#8199B5',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
                     }}
                   >
-                    <Award size={13} color="var(--neon-cyan)" /> Base Points:
+                    <Award size={13} color="#00D9FF" /> Base Points:
                   </span>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                  <span style={{ color: '#EAF8FF', fontWeight: 600 }}>
                     +{breakdown.basePoints}
                   </span>
                 </div>
@@ -286,16 +318,16 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span
                     style={{
-                      color: 'var(--text-secondary)',
+                      color: '#8199B5',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
                     }}
                   >
-                    <Clock size={13} color="var(--neon-green)" /> Time Bonus (
+                    <Clock size={13} color="#65CFFF" /> Cryo-Time Bonus (
                     {Math.round(breakdown.timeRatio * 50)}%):
                   </span>
-                  <span style={{ color: 'var(--neon-green)', fontWeight: 600 }}>
+                  <span style={{ color: '#65CFFF', fontWeight: 600 }}>
                     +{breakdown.timeBonus}
                   </span>
                 </div>
@@ -304,16 +336,16 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span
                       style={{
-                        color: 'var(--text-secondary)',
+                        color: '#8199B5',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                       }}
                     >
-                      <Lightbulb size={13} color="var(--neon-red)" /> Hint Penalty (-
+                      <Lightbulb size={13} color="#FF3B69" /> Hint Penalty (-
                       {Math.round(breakdown.hintPenaltyRatio * 100)}%):
                     </span>
-                    <span style={{ color: 'var(--neon-red)', fontWeight: 600 }}>
+                    <span style={{ color: '#FF3B69', fontWeight: 600 }}>
                       -{breakdown.hintPenaltyAmount}
                     </span>
                   </div>
@@ -323,15 +355,15 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span
                       style={{
-                        color: 'var(--text-secondary)',
+                        color: '#8199B5',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                       }}
                     >
-                      <Flame size={13} color="var(--neon-yellow)" /> Streak Multiplier:
+                      <ShieldCheck size={13} color="#B8D8EA" /> Streak Multiplier:
                     </span>
-                    <span style={{ color: 'var(--neon-yellow)', fontWeight: 600 }}>
+                    <span style={{ color: '#B8D8EA', fontWeight: 600 }}>
                       ×{breakdown.streakMultiplier.toFixed(1)}
                     </span>
                   </div>
@@ -341,15 +373,15 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span
                       style={{
-                        color: 'var(--text-secondary)',
+                        color: '#8199B5',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                       }}
                     >
-                      <Zap size={13} color="var(--neon-magenta)" /> First Attempt Bonus:
+                      <Zap size={13} color="#00D9FF" /> First Attempt Bonus:
                     </span>
-                    <span style={{ color: 'var(--neon-magenta)', fontWeight: 600 }}>
+                    <span style={{ color: '#00D9FF', fontWeight: 600 }}>
                       +{breakdown.firstAttemptBonus}
                     </span>
                   </div>
@@ -357,7 +389,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
 
                 <div
                   style={{
-                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderTop: '1px solid rgba(0, 217, 255, 0.2)',
                     paddingTop: '6px',
                     marginTop: '4px',
                     display: 'flex',
@@ -365,11 +397,11 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
                     fontWeight: 700,
                   }}
                 >
-                  <span style={{ color: 'var(--neon-green)' }}>
+                  <span style={{ color: '#00D9FF' }}>
                     Final Round Score:
                   </span>
-                  <span style={{ color: 'var(--neon-green)' }}>
-                    +{breakdown.finalScore} pts
+                  <span style={{ color: '#00D9FF' }}>
+                    +{breakdown.finalScore} PTS
                   </span>
                 </div>
               </div>
@@ -379,13 +411,13 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
           {/* Feedback summary */}
           <div
             style={{
-              background: 'var(--bg-tertiary)',
-              borderRadius: 'var(--radius-md)',
+              background: '#050B18',
+              border: '1px solid rgba(129, 153, 181, 0.2)',
               padding: '14px',
               marginBottom: '16px',
               textAlign: 'left',
               fontSize: '0.82rem',
-              color: 'var(--text-secondary)',
+              color: '#8199B5',
               fontFamily: 'var(--font-mono)',
               lineHeight: 1.5,
             }}
@@ -397,24 +429,29 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
           <div
             style={{
               fontSize: '0.65rem',
-              color: 'var(--neon-green)',
+              color: '#00D9FF',
               marginBottom: '16px',
               fontFamily: 'var(--font-mono)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
           >
-            ✓ Persisted to Dexie.js IndexedDB • Streak incremented
+            <CheckCircle2 size={12} color="#00D9FF" /> Persisted to Dexie.js IndexedDB • Streak incremented
           </div>
 
           {/* Overall career score */}
           <div
             style={{
               marginBottom: '20px',
-              color: 'var(--text-muted)',
+              color: '#8199B5',
               fontSize: '0.8rem',
+              fontFamily: 'var(--font-mono)',
             }}
           >
-            Career Score:{' '}
-            <span className="neon-text" style={{ fontWeight: 700 }}>
+            CAREER SCORE:{' '}
+            <span style={{ fontWeight: 700, color: '#00D9FF' }}>
               {formatScore(score)}
             </span>
           </div>
@@ -430,23 +467,19 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
           >
             {ticketData && (
               <button
-                className="btn-neon"
+                className="btn-pixel-cyber"
                 onClick={() => setTicketModalOpen(true)}
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Ticket size={16} /> Print Bounty Ticket
-                </span>
+                <Ticket size={15} color="#00D9FF" /> Print Bounty Ticket
               </button>
             )}
 
             <button
-              className="btn-neon btn-neon-green"
+              className="btn-pixel-primary"
               onClick={handleNext}
+              style={{ padding: '12px 24px' }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Play size={16} /> Next Challenge
-                <ChevronRight size={16} />
-              </span>
+              <Play size={15} /> Next Challenge <ChevronRight size={15} />
             </button>
           </div>
         </div>

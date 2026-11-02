@@ -1,312 +1,341 @@
 /**
  * @file pixel-theme.css
- * @description Pixel-art design system and retro 8-bit styling for CodeDuel: BugBounty Arena.
- * Provides authentic pixelated borders, arcade typography, crisp image-rendering,
- * retro button controls, and print-ready achievement badges.
+ * @description ICE MATRIX — Advanced Pixel Cyberpunk Design Language.
+ * Combines 70% premium futuristic UI with 30% advanced pixel-art aesthetics.
+ * Features chamfered corner cuts, stepped pixel borders, cyber HUD brackets,
+ * terminal metadata labels, and crystalline cyan highlights.
  */
 
-/* ── Pixel Font & Typography Tokens ───────────────────────────────────────── */
+/* ── Ice Matrix Pixel Design Tokens ──────────────────────────────────────── */
 :root {
   --font-pixel: 'Press Start 2P', monospace;
-  --pixel-border-width: 2px;
-  --pixel-shadow-sm:
-    0 -2px 0 0 rgba(0, 0, 0, 0.8),
-    2px 0 0 0 rgba(0, 0, 0, 0.8),
-    0 2px 0 0 rgba(0, 0, 0, 0.8),
-    -2px 0 0 0 rgba(0, 0, 0, 0.8);
-  --pixel-shadow-cyan:
-    0 -2px 0 0 #00e5ff,
-    2px 0 0 0 #00e5ff,
-    0 2px 0 0 #00e5ff,
-    -2px 0 0 0 #00e5ff,
-    0 0 10px rgba(0, 229, 255, 0.5);
-  --pixel-shadow-magenta:
-    0 -2px 0 0 #ff00e5,
-    2px 0 0 0 #ff00e5,
-    0 2px 0 0 #ff00e5,
-    -2px 0 0 0 #ff00e5,
-    0 0 10px rgba(255, 0, 229, 0.5);
+  --font-pixel-subtle: 'Silkscreen', monospace;
+  --font-hud: 'JetBrains Mono', monospace;
+
+  /* Strict Ice Matrix Palette */
+  --im-void-navy: #050B18;
+  --im-deep-matrix: #081426;
+  --im-midnight-blue: #0D1D35;
+  --im-electric-cyan: #00D9FF;
+  --im-ice-blue: #65CFFF;
+  --im-holographic-blue: #287BFF;
+  --im-frost-white: #EAF8FF;
+  --im-muted-steel: #8199B5;
+  --im-pale-silver: #B8D8EA;
+
+  /* Shadows and Glare */
+  --im-glow-cyan-sm: 0 0 10px rgba(0, 217, 255, 0.45);
+  --im-glow-cyan-md: 0 0 20px rgba(0, 217, 255, 0.35), 0 0 40px rgba(40, 123, 255, 0.15);
+  --im-glow-ice: 0 0 15px rgba(101, 207, 255, 0.3);
+
+  /* Advanced Stepped Pixel Border Shadows */
+  --pixel-border-cyan:
+    -2px 0 0 0 var(--im-electric-cyan),
+    2px 0 0 0 var(--im-electric-cyan),
+    0 -2px 0 0 var(--im-electric-cyan),
+    0 2px 0 0 var(--im-electric-cyan);
+
+  --pixel-border-ice:
+    -2px 0 0 0 var(--im-ice-blue),
+    2px 0 0 0 var(--im-ice-blue),
+    0 -2px 0 0 var(--im-ice-blue),
+    0 2px 0 0 var(--im-ice-blue);
+
+  --pixel-border-subtle:
+    -1px 0 0 0 rgba(129, 153, 181, 0.35),
+    1px 0 0 0 rgba(129, 153, 181, 0.35),
+    0 -1px 0 0 rgba(129, 153, 181, 0.35),
+    0 1px 0 0 rgba(129, 153, 181, 0.35);
 }
 
-/* ── Image & Canvas Crisp Pixel Rendering ─────────────────────────────────── */
+/* ── Pixel Rendering Quality ──────────────────────────────────────────────── */
 .pixel-art,
 .pixelated,
-img.pixel-art,
-canvas.pixel-art {
+canvas.pixel-art,
+img.pixel-art {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
 
-/* ── Pixel Typography ─────────────────────────────────────────────────────── */
-.pixel-text {
-  font-family: var(--font-pixel);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: grayscale;
+/* ── Cyber Chamfered / Notched Corner Cuts ─────────────────────────────────── */
+.cyber-chamfer {
+  clip-path: polygon(
+    0 10px,
+    10px 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
 }
 
-.pixel-title {
-  font-family: var(--font-pixel);
-  font-size: 1rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--neon-cyan, #00e5ff);
-  text-shadow: 2px 2px 0 #000, 0 0 10px rgba(0, 229, 255, 0.6);
+.cyber-chamfer-lg {
+  clip-path: polygon(
+    0 16px,
+    16px 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% calc(100% - 16px),
+    calc(100% - 16px) 100%,
+    16px 100%,
+    0 calc(100% - 16px)
+  );
 }
 
-.pixel-subtext {
-  font-family: var(--font-pixel);
-  font-size: 0.65rem;
-  letter-spacing: 1px;
-  color: var(--text-secondary, #8888a0);
+.cyber-chamfer-topright {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 14px) 0,
+    100% 14px,
+    100% 100%,
+    0 100%
+  );
 }
 
-/* ── Stepped Pixel Borders & Containers ──────────────────────────────────── */
+/* ── Pixel Box & Advanced Cards ───────────────────────────────────────────── */
 .pixel-box {
   position: relative;
-  background: var(--bg-card, #121526);
-  border: 2px solid #000000;
-  box-shadow:
-    -3px 0 0 0 #000000,
-    3px 0 0 0 #000000,
-    0 -3px 0 0 #000000,
-    0 3px 0 0 #000000;
-  padding: 16px;
-  image-rendering: pixelated;
+  background: rgba(8, 20, 38, 0.88);
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  box-shadow: var(--pixel-border-subtle);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pixel-box::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--im-electric-cyan), transparent);
+  opacity: 0.6;
 }
 
 .pixel-box-cyan {
-  border-color: #00e5ff;
+  border-color: rgba(0, 217, 255, 0.45);
   box-shadow:
-    -3px 0 0 0 #00e5ff,
-    3px 0 0 0 #00e5ff,
-    0 -3px 0 0 #00e5ff,
-    0 3px 0 0 #00e5ff,
-    0 0 12px rgba(0, 229, 255, 0.35);
+    -2px 0 0 0 rgba(0, 217, 255, 0.6),
+    2px 0 0 0 rgba(0, 217, 255, 0.6),
+    0 -2px 0 0 rgba(0, 217, 255, 0.6),
+    0 2px 0 0 rgba(0, 217, 255, 0.6),
+    0 0 15px rgba(0, 217, 255, 0.2);
 }
 
-.pixel-box-magenta {
-  border-color: #ff00e5;
+.pixel-box-cyan:hover {
+  border-color: var(--im-electric-cyan);
   box-shadow:
-    -3px 0 0 0 #ff00e5,
-    3px 0 0 0 #ff00e5,
-    0 -3px 0 0 #ff00e5,
-    0 3px 0 0 #ff00e5,
-    0 0 12px rgba(255, 0, 229, 0.35);
+    -2px 0 0 0 var(--im-electric-cyan),
+    2px 0 0 0 var(--im-electric-cyan),
+    0 -2px 0 0 var(--im-electric-cyan),
+    0 2px 0 0 var(--im-electric-cyan),
+    var(--im-glow-cyan-sm);
 }
 
-.pixel-box-green {
-  border-color: #00ffa3;
-  box-shadow:
-    -3px 0 0 0 #00ffa3,
-    3px 0 0 0 #00ffa3,
-    0 -3px 0 0 #00ffa3,
-    0 3px 0 0 #00ffa3,
-    0 0 12px rgba(0, 255, 163, 0.35);
+/* ── HUD Corner Brackets ─────────────────────────────────────────────────── */
+.hud-corner-brackets {
+  position: relative;
 }
 
-/* ── Pixel Buttons ────────────────────────────────────────────────────────── */
-.pixel-btn,
-.btn-pixel {
+.hud-corner-brackets::before,
+.hud-corner-brackets::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hud-corner-brackets::before {
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--im-electric-cyan);
+  border-left: 2px solid var(--im-electric-cyan);
+}
+
+.hud-corner-brackets::after {
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid var(--im-electric-cyan);
+  border-right: 2px solid var(--im-electric-cyan);
+}
+
+/* ── Ice Matrix Pixel Buttons ─────────────────────────────────────────────── */
+.btn-pixel-cyber {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 8px 16px;
-  font-family: var(--font-pixel);
-  font-size: 0.75rem;
-  letter-spacing: 1px;
+  font-family: var(--font-arcade);
+  font-size: 0.65rem;
+  font-weight: 700;
   text-transform: uppercase;
-  color: var(--neon-cyan, #00e5ff);
-  background: var(--bg-secondary, #121526);
-  border: 2px solid var(--neon-cyan, #00e5ff);
-  box-shadow:
-    -2px 0 0 0 var(--neon-cyan, #00e5ff),
-    2px 0 0 0 var(--neon-cyan, #00e5ff),
-    0 -2px 0 0 var(--neon-cyan, #00e5ff),
-    0 2px 0 0 var(--neon-cyan, #00e5ff);
+  letter-spacing: 1px;
+  color: var(--im-frost-white);
+  background: #081426;
+  border: 2px solid rgba(0, 217, 255, 0.45);
+  box-shadow: 2px 2px 0px #050B18, 3px 3px 0px rgba(0, 217, 255, 0.35);
   cursor: pointer;
-  transition: transform 0.08s step-end, box-shadow 0.08s step-end;
-  position: relative;
   user-select: none;
+  transition: none;
+  image-rendering: pixelated;
 }
 
-.pixel-btn:hover,
-.btn-pixel:hover {
-  background: var(--neon-cyan, #00e5ff);
-  color: #090a0f;
-  box-shadow:
-    -2px 0 0 0 #ffffff,
-    2px 0 0 0 #ffffff,
-    0 -2px 0 0 #ffffff,
-    0 2px 0 0 #ffffff,
-    0 0 14px rgba(0, 229, 255, 0.6);
+.btn-pixel-cyber:hover {
+  color: var(--im-electric-cyan);
+  border-color: var(--im-electric-cyan);
+  box-shadow: 2px 2px 0px #050B18, 3px 3px 0px var(--im-electric-cyan);
+  background: #0D1D35;
 }
 
-.pixel-btn:active,
-.btn-pixel:active {
+.btn-pixel-cyber:active {
   transform: translate(2px, 2px);
-  box-shadow: none;
+  box-shadow: 1px 1px 0px #050B18;
 }
 
-.pixel-btn-magenta,
-.btn-pixel-magenta {
-  color: var(--neon-magenta, #ff00e5);
-  border-color: var(--neon-magenta, #ff00e5);
-  box-shadow:
-    -2px 0 0 0 var(--neon-magenta, #ff00e5),
-    2px 0 0 0 var(--neon-magenta, #ff00e5),
-    0 -2px 0 0 var(--neon-magenta, #ff00e5),
-    0 2px 0 0 var(--neon-magenta, #ff00e5);
+/* Primary Cyan Filled Variant */
+.btn-pixel-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-family: var(--font-arcade);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: var(--im-electric-cyan);
+  color: #050B18;
+  border: 2px solid #EAF8FF;
+  box-shadow: 3px 3px 0px #050B18, 4px 4px 0px #287BFF;
+  cursor: pointer;
+  user-select: none;
+  transition: none;
+  image-rendering: pixelated;
 }
 
-.pixel-btn-magenta:hover,
-.btn-pixel-magenta:hover {
-  background: var(--neon-magenta, #ff00e5);
-  color: #090a0f;
-  box-shadow:
-    -2px 0 0 0 #ffffff,
-    2px 0 0 0 #ffffff,
-    0 -2px 0 0 #ffffff,
-    0 2px 0 0 #ffffff,
-    0 0 14px rgba(255, 0, 229, 0.6);
+.btn-pixel-primary:hover {
+  background: var(--im-ice-blue);
+  color: #050B18;
+  border-color: #FFFFFF;
+  box-shadow: 3px 3px 0px #050B18, 5px 5px 0px var(--im-electric-cyan);
 }
 
-.pixel-btn-green,
-.btn-pixel-green {
-  color: var(--neon-green, #00ffa3);
-  border-color: var(--neon-green, #00ffa3);
-  box-shadow:
-    -2px 0 0 0 var(--neon-green, #00ffa3),
-    2px 0 0 0 var(--neon-green, #00ffa3),
-    0 -2px 0 0 var(--neon-green, #00ffa3),
-    0 2px 0 0 var(--neon-green, #00ffa3);
+.btn-pixel-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #050B18;
 }
 
-.pixel-btn-green:hover,
-.btn-pixel-green:hover {
-  background: var(--neon-green, #00ffa3);
-  color: #090a0f;
-  box-shadow:
-    -2px 0 0 0 #ffffff,
-    2px 0 0 0 #ffffff,
-    0 -2px 0 0 #ffffff,
-    0 2px 0 0 #ffffff,
-    0 0 14px rgba(0, 255, 163, 0.6);
-}
-
-/* ── Pixel Achievement & Difficulty Badges ────────────────────────────────── */
-.pixel-badge {
+/* ── Digital Grid Scanlines & HUD Deco ────────────────────────────────────── */
+.pixel-status-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
   font-family: var(--font-pixel);
-  font-size: 0.65rem;
-  letter-spacing: 0.5px;
+  font-size: 0.58rem;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  border-radius: 0;
-  border: 1px solid currentColor;
-  box-shadow:
-    -1px 0 0 0 currentColor,
-    1px 0 0 0 currentColor,
-    0 -1px 0 0 currentColor,
-    0 1px 0 0 currentColor;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-  background-clip: padding-box;
+  background: rgba(8, 20, 38, 0.95);
+  border: 1px solid var(--im-electric-cyan);
+  box-shadow: 2px 2px 0px #050B18;
+  color: var(--im-ice-blue);
+  image-rendering: pixelated;
 }
 
-.pixel-badge-easy {
-  background: rgba(0, 255, 163, 0.15);
-  color: var(--neon-green, #00ffa3);
-  border-color: rgba(0, 255, 163, 0.5);
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
+.pixel-status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--im-electric-cyan);
+  box-shadow: 0 0 6px var(--im-electric-cyan);
 }
 
-.pixel-badge-medium {
-  background: rgba(255, 230, 0, 0.15);
-  color: var(--neon-yellow, #ffe600);
-  border-color: rgba(255, 230, 0, 0.5);
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
+/* ── Pixel Modal Frame ────────────────────────────────────────────────────── */
+.pixel-modal-content {
+  border-radius: 0 !important;
+  border: 2px solid var(--im-electric-cyan) !important;
+  box-shadow: 0 0 0 2px #050B18, 0 0 0 4px var(--im-electric-cyan), 8px 8px 0px rgba(5, 11, 24, 0.95) !important;
+  background: #081426 !important;
 }
 
-.pixel-badge-hard {
-  background: rgba(255, 0, 85, 0.15);
-  color: var(--neon-red, #ff0055);
-  border-color: rgba(255, 0, 85, 0.5);
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
+/* ── Pixel Input Controls ─────────────────────────────────────────────────── */
+.pixel-input {
+  border-radius: 0 !important;
+  background: #050B18 !important;
+  border: 2px solid rgba(0, 217, 255, 0.45) !important;
+  box-shadow: inset 2px 2px 0px #000000, 2px 2px 0px rgba(0, 217, 255, 0.2) !important;
+  color: var(--im-frost-white) !important;
+  font-family: var(--font-hud) !important;
+  padding: 8px 12px !important;
+  outline: none !important;
 }
 
-.pixel-badge-cyan {
-  background: rgba(0, 229, 255, 0.15);
-  color: var(--neon-cyan, #00e5ff);
-  border-color: rgba(0, 229, 255, 0.5);
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
+.pixel-input:focus {
+  border-color: var(--im-electric-cyan) !important;
+  box-shadow: inset 2px 2px 0px #000000, 0 0 8px rgba(0, 217, 255, 0.5) !important;
 }
 
-.pixel-badge-magenta {
-  background: rgba(255, 0, 229, 0.15);
-  color: var(--neon-magenta, #ff00e5);
-  border-color: rgba(255, 0, 229, 0.5);
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-
-/* ── Lightweight Scanlines CSS Filter ─────────────────────────────────────── */
-.scanlines-filter {
+/* ── Pixel Segmented Progress Bar ─────────────────────────────────────────── */
+.pixel-progress-track {
+  height: 14px;
+  border: 2px solid var(--im-electric-cyan);
+  background: #050B18;
+  box-shadow: 2px 2px 0px #050B18;
   position: relative;
   overflow: hidden;
 }
 
-.scanlines-filter::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%,
-    rgba(0, 0, 0, 0.22) 50%
-  ),
-  linear-gradient(
+.pixel-progress-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
     90deg,
-    rgba(255, 0, 0, 0.02),
-    rgba(0, 255, 0, 0.01),
-    rgba(0, 0, 255, 0.02)
+    var(--im-electric-cyan) 0px,
+    var(--im-electric-cyan) 8px,
+    #081426 8px,
+    #081426 10px
   );
-  background-size: 100% 3px, 6px 100%;
-  opacity: 0.85;
-  z-index: 10;
+  box-shadow: 0 0 8px var(--im-electric-cyan);
+  transition: width 0.3s steps(10);
 }
 
-/* ── Print Styles for Badges & Pixel Graphics ────────────────────────────── */
-@media print {
-  *,
-  *::before,
-  *::after {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .badge,
-  .badge-easy,
-  .badge-medium,
-  .badge-hard,
-  .pixel-badge,
-  .pixel-badge-easy,
-  .pixel-badge-medium,
-  .pixel-badge-hard,
-  .pixel-badge-cyan,
-  .pixel-badge-magenta,
-  [class*="badge"] {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
+/* ── Terminal Block Divider ──────────────────────────────────────────────── */
+.matrix-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+  color: rgba(129, 153, 181, 0.4);
+  font-family: var(--font-hud);
+  font-size: 0.65rem;
 }
 
+.matrix-divider::before,
+.matrix-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.3), transparent);
+}
+
+/* ── Digital Glitch Keyframes ────────────────────────────────────────────── */
+@keyframes matrixGlitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, 2px); }
+  80% { transform: translate(1px, -2px); }
+  100% { transform: translate(0); }
+}
+
+.matrix-glitch-hover:hover {
+  animation: matrixGlitch 0.3s steps(2, end);
+}

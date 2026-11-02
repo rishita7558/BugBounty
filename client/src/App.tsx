@@ -1,8 +1,9 @@
 /**
  * @file App.tsx
- * @description Main application container for CodeDuel: BugBounty Arena.
- * Orchestrates game phases, Monaco code editor, sandboxed execution,
- * arcade countdown HUD, combo multipliers, state machines, and resilience error boundaries.
+ * @description Main application container for CodeDuel: BugBounty Arena — ICE MATRIX Edition.
+ * Orchestrates game phases, 3D interactive Ice Crystal canvas, Monaco code editor,
+ * sandboxed Web Worker execution, cryogenic countdown HUD, combo multipliers,
+ * state machines, and resilience error boundaries.
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -14,6 +15,7 @@ import { generateChallenge, reviewCode } from '@/services/api';
 import { CodeEditor } from '@/components/editor/CodeEditor';
 import { ArcadeHUD } from '@/components/arcade/ArcadeHUD';
 import { Scoreboard } from '@/components/arcade/Scoreboard';
+import { IceCrystalCanvas } from '@/components/arcade/IceCrystalCanvas';
 import { VictoryModal } from '@/components/modals/VictoryModal';
 import { DefeatModal } from '@/components/modals/DefeatModal';
 import { HintModal } from '@/components/modals/HintModal';
@@ -29,13 +31,31 @@ import {
   encodeChallengeToUrl,
   type ShareableChallengePayload,
 } from '@/lib/lzShare';
-import { getPlayerProfile } from '@/lib/db';
+import { getPlayerProfile, recordClientQuestion, getClientQuestionExclusions } from '@/lib/db';
+
+export type ChallengeStyle =
+  | 'find-the-bug'
+  | 'fix-the-code'
+  | 'predict-the-output'
+  | 'logic-hunt'
+  | 'complete-the-code'
+  | 'code-review'
+  | 'edge-case-hunt';
+
+export const CHALLENGE_STYLES: Array<{ id: ChallengeStyle; label: string; icon: string }> = [
+  { id: 'find-the-bug', label: 'FIND BUG', icon: '🔍' },
+  { id: 'fix-the-code', label: 'FIX CODE', icon: '⚡' },
+  { id: 'predict-the-output', label: 'PREDICT OUTPUT', icon: '🎯' },
+  { id: 'logic-hunt', label: 'LOGIC HUNT', icon: '🧠' },
+  { id: 'complete-the-code', label: 'COMPLETE CODE', icon: '🧩' },
+  { id: 'code-review', label: 'CODE REVIEW', icon: '🛡️' },
+  { id: 'edge-case-hunt', label: 'EDGE CASES', icon: '⚠️' },
+];
 import { GameActionMachine } from '@/core/state/GameActionMachine';
 import { HintStateMachine } from '@/core/state/HintStateMachine';
 import { AudioManager } from '@/core/services/AudioManager';
 import {
   Zap,
-  Bug,
   Play,
   Send,
   Lightbulb,
@@ -52,10 +72,14 @@ import {
   Trophy,
   Layers,
   Check,
+  Shield,
+  Cpu,
+  Sparkles,
+  Activity,
 } from 'lucide-react';
 
 /**
- * Root interactive component for the CodeDuel BugBounty Arena.
+ * Root interactive component for the CodeDuel BugBounty Arena — ICE MATRIX.
  *
  * @returns Rendered arena interface protected by domain error boundaries.
  */
@@ -105,6 +129,8 @@ function App() {
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
+  const [easterEggActive, setEasterEggActive] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState<ChallengeStyle>('fix-the-code');
 
   /**
    * Initializes challenge state from URL hash if compressed challenge parameters are detected.
@@ -145,6 +171,21 @@ function App() {
   }, []);
 
   /**
+   * Keyboard Easter Egg: Shift + M triggers Ice Matrix Data Burst.
+   */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+        setEasterEggActive(true);
+        play('click');
+        setTimeout(() => setEasterEggActive(false), 3000);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [play]);
+
+  /**
    * Toggles the lightweight retro scanlines CSS filter on the document body.
    */
   useEffect(() => {
@@ -175,12 +216,22 @@ function App() {
 
     try {
       setPhase('loading');
+      // Retrieve persistent exclusions across browser restarts & sessions from IndexedDB
+      const { excludeIds: dbExcludeIds, recentFingerprints } = await getClientQuestionExclusions();
+      const combinedExcludeIds = Array.from(new Set([...seenChallengeIds, ...dbExcludeIds]));
+
       const ch = await generateChallenge({
         difficulty,
         language: selectedLanguage,
         topic: selectedTopic || undefined,
-        excludeIds: seenChallengeIds,
+        challengeStyle: selectedStyle,
+        excludeIds: combinedExcludeIds,
+        recentFingerprints,
       });
+
+      // Persist to local IndexedDB to guarantee strict no-repetition
+      await recordClientQuestion(ch);
+
       setChallenge(ch);
       setConsoleOutput('');
       play('click');
@@ -192,7 +243,19 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [difficulty, selectedLanguage, selectedTopic, seenChallengeIds, phase, loading, setChallenge, setPhase, clearActionError, play]);
+  }, [
+    difficulty,
+    selectedLanguage,
+    selectedTopic,
+    selectedStyle,
+    seenChallengeIds,
+    phase,
+    loading,
+    setChallenge,
+    setPhase,
+    clearActionError,
+    play,
+  ]);
 
   /**
    * Dispatches player source code to the sandboxed Web Worker execution engine.
@@ -210,13 +273,13 @@ function App() {
     try {
       const result = await runCode(playerCode);
       const output = result.success
-        ? `✅ Execution OK (${result.executionTime}ms)\n${result.output}`
-        : `❌ Error (${result.executionTime}ms)\n${result.error}\n${result.output}`;
+        ? `[OK] Execution Passed in ${result.executionTime}ms\n----------------------------------------\n${result.output}`
+        : `[FAIL] Execution Error (${result.executionTime}ms)\n----------------------------------------\n${result.error}\n${result.output}`;
       setConsoleOutput(output);
     } catch (err: unknown) {
       const appErr = toAppError(err, 'Unknown execution engine fault.');
       console.error('[Arena] Code execution failed:', appErr);
-      setConsoleOutput(`❌ Execution Failed: ${appErr.message}`);
+      setConsoleOutput(`[CRITICAL] Execution Engine Failed: ${appErr.message}`);
       setLocalError(`Execution error: ${appErr.getUserFriendlyMessage()}`);
     }
   }, [phase, isRunning, playerCode, runCode, play]);
@@ -333,123 +396,199 @@ function App() {
   return (
     <div
       className={screenShake ? 'animate-screen-shake' : ''}
-      style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: '#050B18',
+        position: 'relative',
+      }}
     >
+      {/* ── Easter Egg Matrix Stream Banner ─────────────────────────────────── */}
+      {easterEggActive && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 99999,
+            background: 'linear-gradient(90deg, #00D9FF, #287BFF, #65CFFF)',
+            color: '#050B18',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            textAlign: 'center',
+            padding: '6px',
+            letterSpacing: '2px',
+            boxShadow: '0 0 25px rgba(0, 217, 255, 0.8)',
+          }}
+        >
+          ❄️ ICE MATRIX OVERCLOCK ACTIVE — QUANTUM RECEPTOR SYNCHRONIZED [SHIFT+M]
+        </div>
+      )}
+
       {/* ── Navigation Header Subtree ────────────────────────────────────────── */}
       <ErrorBoundary componentName="ArenaHeader">
         <header
           style={{
-            padding: '16px 24px',
+            padding: '14px 28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid var(--border-subtle)',
+            borderBottom: '1px solid rgba(0, 217, 255, 0.2)',
+            backgroundColor: 'rgba(5, 11, 24, 0.92)',
+            backdropFilter: 'blur(16px)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 50,
             flexWrap: 'wrap',
             gap: '12px',
           }}
         >
+          {/* Logo & Identity */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Bug
-              size={28}
-              color="var(--neon-cyan)"
-              style={{ filter: 'drop-shadow(0 0 6px rgba(0,240,255,0.5))' }}
-            />
-            <h1 className="arcade-text neon-text" style={{ fontSize: '0.75rem', margin: 0 }}>
-              CodeDuel
-            </h1>
-            <span
+            <div
               style={{
-                fontSize: '0.6rem',
-                color: 'var(--neon-magenta)',
-                fontFamily: 'var(--font-arcade)',
-                opacity: 0.7,
+                width: '32px',
+                height: '32px',
+                background: 'linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(40, 123, 255, 0.4))',
+                border: '1px solid #00D9FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 12px rgba(0, 217, 255, 0.5)',
               }}
+              className="pixel-box"
             >
-              BugBounty Arena
-            </span>
+              <Cpu size={18} color="#00D9FF" />
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h1
+                  style={{
+                    fontSize: '0.95rem',
+                    fontWeight: 800,
+                    margin: 0,
+                    letterSpacing: '1.5px',
+                    color: '#EAF8FF',
+                    fontFamily: 'var(--font-heading)',
+                  }}
+                >
+                  CODEDUEL
+                </h1>
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    color: '#00D9FF',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    letterSpacing: '1px',
+                    border: '1px solid rgba(0, 217, 255, 0.35)',
+                    padding: '1px 6px',
+                    borderRadius: '2px',
+                    background: 'rgba(0, 217, 255, 0.08)',
+                  }}
+                >
+                  ICE MATRIX
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '0.65rem',
+                  color: '#8199B5',
+                  fontFamily: 'var(--font-mono)',
+                  letterSpacing: '1px',
+                }}
+              >
+                ADVANCED VULNERABILITY REMEDIATION ARENA
+              </div>
+            </div>
           </div>
 
+          {/* Quick Actions & Modals */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {/* Topic & Language Taxonomy selector */}
             <button
-              className="btn-neon"
+              className="btn-pixel-cyber"
               onClick={() => {
                 setTopicModalOpen(true);
                 play('click');
               }}
               title="Select Language & Bug Vulnerability Topic (JS / TS / Python)"
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Layers size={16} color={getLanguageMeta(selectedLanguage).color} />
-                <span style={{ color: getLanguageMeta(selectedLanguage).color }}>
-                  {getLanguageMeta(selectedLanguage).label}
-                </span>
-                {selectedTopic && (
-                  <span
-                    style={{
-                      fontSize: '0.6rem',
-                      opacity: 0.8,
-                      maxWidth: '120px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    • {getTopicById(selectedTopic)?.name || selectedTopic}
-                  </span>
-                )}
+              <Layers size={14} color={getLanguageMeta(selectedLanguage).color} />
+              <span style={{ color: getLanguageMeta(selectedLanguage).color }}>
+                {getLanguageMeta(selectedLanguage).label}
               </span>
+              {selectedTopic && (
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    color: '#8199B5',
+                    maxWidth: '120px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  • {getTopicById(selectedTopic)?.name || selectedTopic}
+                </span>
+              )}
             </button>
 
-            {/* Serverless Leaderboard trigger */}
+            {/* Global Leaderboard trigger */}
             <button
-              className="btn-neon"
+              className="btn-pixel-cyber"
               onClick={() => {
                 setLeaderboardModalOpen(true);
                 play('click');
               }}
               title="Global Serverless Arcade Leaderboard"
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--neon-yellow)' }}>
-                <Trophy size={16} color="var(--neon-yellow)" /> Leaderboard
-              </span>
+              <Trophy size={14} color="#00D9FF" />
+              <span style={{ color: '#EAF8FF' }}>Leaderboard</span>
             </button>
 
             {/* Player profile trigger */}
             <button
-              className="btn-neon"
+              className="btn-pixel-cyber"
               onClick={() => {
                 setProfileOpen(true);
                 play('click');
               }}
-              title="Player Profile & Hacker Badges"
+              title="Player Profile & Security Badges"
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <User size={16} /> Profile
-              </span>
+              <User size={14} color="#65CFFF" />
+              <span style={{ color: '#EAF8FF' }}>Profile</span>
             </button>
 
-            {/* Lightweight scanlines CSS filter toggle */}
+            {/* Scanlines Filter Toggle */}
             <button
-              className="btn-neon"
+              className="btn-pixel-cyber"
               onClick={() => {
                 toggleScanlines();
                 play('click');
               }}
-              style={{ padding: '8px', opacity: scanlinesEnabled ? 1 : 0.45 }}
+              style={{
+                padding: '8px 12px',
+                borderColor: scanlinesEnabled ? '#00D9FF' : 'rgba(129, 153, 181, 0.3)',
+                background: scanlinesEnabled ? 'rgba(0, 217, 255, 0.15)' : 'rgba(8, 20, 38, 0.8)',
+              }}
               title={scanlinesEnabled ? 'Disable Scanlines Filter' : 'Enable Scanlines Filter'}
             >
-              <span><Tv2 size={16} /></span>
+              <Tv2 size={14} color={scanlinesEnabled ? '#00D9FF' : '#8199B5'} />
             </button>
 
-            {/* Audio synthesizer toggle */}
+            {/* Audio Toggle */}
             <button
-              className="btn-neon"
+              className="btn-pixel-cyber"
               onClick={toggleSound}
-              style={{ padding: '8px' }}
-              title={soundEnabled ? 'Mute' : 'Unmute'}
+              style={{ padding: '8px 12px' }}
+              title={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
             >
-              <span>{soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}</span>
+              {soundEnabled ? <Volume2 size={14} color="#00D9FF" /> : <VolumeX size={14} color="#8199B5" />}
             </button>
           </div>
         </header>
@@ -459,35 +598,34 @@ function App() {
       <main
         style={{
           flex: 1,
-          padding: '24px',
+          padding: '24px 28px',
           display: 'flex',
           flexDirection: 'column',
           gap: '20px',
+          maxWidth: '1600px',
+          width: '100%',
+          margin: '0 auto',
         }}
       >
-        {/* Scoreboard Subtree */}
-        <ErrorBoundary componentName="Scoreboard">
-          <Scoreboard />
-        </ErrorBoundary>
-
         {/* Global Error Banner */}
         {activeError && (
           <div
-            className="glass-card animate-shake"
+            className="pixel-box animate-screen-shake"
             style={{
               padding: '12px 18px',
-              border: '1px solid rgba(255, 0, 85, 0.4)',
-              background: 'rgba(255, 0, 85, 0.12)',
+              border: '1px solid rgba(255, 59, 105, 0.6)',
+              background: 'rgba(255, 59, 105, 0.12)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              color: 'var(--neon-red)',
-              fontSize: '0.85rem',
+              color: '#FF3B69',
+              fontSize: '0.8rem',
+              fontFamily: 'var(--font-mono)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle size={18} />
-              <span>{activeError}</span>
+              <AlertCircle size={16} />
+              <span>[EXCEPTION] {activeError}</span>
             </div>
             <button
               onClick={() => {
@@ -497,9 +635,8 @@ function App() {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--neon-red)',
+                color: '#FF3B69',
                 cursor: 'pointer',
-                display: 'flex',
               }}
             >
               <X size={16} />
@@ -510,16 +647,16 @@ function App() {
         {/* Share Feedback Toast */}
         {shareToast && (
           <div
-            className="glass-card animate-score-pop"
+            className="pixel-box animate-score-pop"
             style={{
               padding: '12px 18px',
-              border: '1px solid var(--neon-green)',
-              background: 'rgba(57, 255, 20, 0.1)',
+              border: '1px solid #00D9FF',
+              background: 'rgba(0, 217, 255, 0.12)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              color: 'var(--neon-green)',
-              fontSize: '0.85rem',
+              color: '#00D9FF',
+              fontSize: '0.8rem',
               fontFamily: 'var(--font-mono)',
             }}
           >
@@ -532,7 +669,7 @@ function App() {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--neon-green)',
+                color: '#00D9FF',
                 cursor: 'pointer',
               }}
             >
@@ -541,120 +678,339 @@ function App() {
           </div>
         )}
 
-        {/* ── Idle / Loading Phase ─────────────────────────────────────────── */}
+        {/* ── Idle / Loading Phase: CINEMATIC 3D ICE MATRIX HERO ───────────── */}
         {(phase === 'idle' || phase === 'loading') && (
-          <ErrorBoundary componentName="ChallengeLobby">
+          <ErrorBoundary componentName="IceMatrixHero">
             <div
-              className="glass-card"
               style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+                gap: '32px',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '24px',
-                padding: '60px 40px',
-                textAlign: 'center',
+                padding: '24px 0',
               }}
             >
-              <div className="animate-float">
-                <Bug
-                  size={64}
-                  color="var(--neon-cyan)"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(0,240,255,0.4))' }}
-                />
-              </div>
+              {/* Left Column: Mission Narrative & Controls */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Status HUD Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="pixel-status-badge">
+                    SYSTEM STATUS: READY
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.65rem',
+                      color: '#8199B5',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    V8 • MULTI-LANG SANDBOX ENGAGED
+                  </span>
+                </div>
 
-              <div>
-                <h2
-                  className="arcade-text neon-text"
-                  style={{ fontSize: '1rem', marginBottom: '12px' }}
+                {/* Oversized Futuristic Headline */}
+                <div>
+                  <h2
+                    style={{
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: 'clamp(2.4rem, 4.5vw, 3.8rem)',
+                      fontWeight: 800,
+                      lineHeight: 1.08,
+                      letterSpacing: '-0.5px',
+                      color: '#EAF8FF',
+                      margin: 0,
+                    }}
+                  >
+                    HUNT BUGS. <br />
+                    <span
+                      style={{
+                        background: 'linear-gradient(135deg, #00D9FF 0%, #65CFFF 50%, #287BFF 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        textShadow: '0 0 30px rgba(0, 217, 255, 0.4)',
+                      }}
+                    >
+                      PATCH ZERO-DAYS.
+                    </span>
+                  </h2>
+                  <p
+                    style={{
+                      color: '#8199B5',
+                      fontSize: '0.95rem',
+                      lineHeight: 1.6,
+                      marginTop: '14px',
+                      maxWidth: '560px',
+                    }}
+                  >
+                    Enter the high-stakes cybersecurity debugging playground. Inspect obfuscated
+                    procedural code, isolate memory leaks, prototype corruptions, and injection vectors,
+                    and submit airtight fixes before the cryogenic clock expires.
+                  </p>
+                </div>
+
+                {/* Bento Configuration Card */}
+                <div
+                  className="pixel-box"
+                  style={{
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    background: 'rgba(8, 20, 38, 0.9)',
+                    border: '1px solid rgba(0, 217, 255, 0.3)',
+                  }}
                 >
-                  Ready to Hunt Bugs?
-                </h2>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px' }}>
-                  Locate and resolve vulnerabilities in procedural code challenges. Score points,
-                  build daily calendar streaks, and climb the leaderboard in the arena.
-                </p>
-              </div>
+                  {/* Selected Topic Badge */}
+                  <div
+                    onClick={() => {
+                      setTopicModalOpen(true);
+                      play('click');
+                    }}
+                    style={{
+                      cursor: 'pointer',
+                      padding: '10px 14px',
+                      background: 'rgba(5, 11, 24, 0.8)',
+                      border: '1px solid rgba(0, 217, 255, 0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                    }}
+                    title="Click to customize language and vulnerability taxonomy"
+                  >
+                    <Layers size={20} color={getLanguageMeta(selectedLanguage).color} />
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: '0.65rem',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          color: getLanguageMeta(selectedLanguage).color,
+                        }}
+                      >
+                        TARGET: {getLanguageMeta(selectedLanguage).label.toUpperCase()} •{' '}
+                        {selectedTopic ? getTopicById(selectedTopic)?.name.toUpperCase() : 'ALL BUG DOMAINS'}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#8199B5', marginTop: '2px' }}>
+                        {selectedTopic
+                          ? getTopicById(selectedTopic)?.description
+                          : 'Dynamic procedural generation active across concurrency, logic, and injection flaws.'}
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Selected Topic & Language Badge */}
-              <div
-                onClick={() => {
-                  setTopicModalOpen(true);
-                  play('click');
-                }}
-                className="pixel-box"
-                style={{
-                  cursor: 'pointer',
-                  padding: '10px 18px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  background: 'rgba(18, 21, 38, 0.9)',
-                  border: `1px solid ${getLanguageMeta(selectedLanguage).color}`,
-                  maxWidth: '520px',
-                }}
-                title="Click to select specific vulnerability topics or switch language"
-              >
-                <Layers size={20} color={getLanguageMeta(selectedLanguage).color} />
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-pixel)', color: getLanguageMeta(selectedLanguage).color }}>
-                    {getLanguageMeta(selectedLanguage).label} // {selectedTopic ? getTopicById(selectedTopic)?.name : 'ALL VULNERABILITY DOMAINS'}
+                  {/* Challenge Style Selector */}
+                  <div>
+                    <div
+                      style={{
+                        fontSize: '0.62rem',
+                        fontFamily: 'var(--font-arcade)',
+                        color: '#8199B5',
+                        marginBottom: '8px',
+                        letterSpacing: '1px',
+                      }}
+                    >
+                      CHALLENGE STYLE:
+                    </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))',
+                        gap: '6px',
+                      }}
+                    >
+                      {CHALLENGE_STYLES.map((style) => {
+                        const active = selectedStyle === style.id;
+                        return (
+                          <button
+                            key={style.id}
+                            className="btn-pixel-cyber"
+                            onClick={() => {
+                              setSelectedStyle(style.id);
+                              play('click');
+                            }}
+                            style={{
+                              padding: '6px 8px',
+                              fontSize: '0.55rem',
+                              fontFamily: 'var(--font-arcade)',
+                              borderColor: active ? '#00D9FF' : 'rgba(129, 153, 181, 0.25)',
+                              background: active ? 'rgba(0, 217, 255, 0.2)' : 'rgba(5, 11, 24, 0.75)',
+                              color: active ? '#00D9FF' : '#8199B5',
+                              boxShadow: active ? '2px 2px 0px #050B18, 3px 3px 0px #00D9FF' : undefined,
+                            }}
+                          >
+                            <span>{style.icon}</span> {style.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                    {selectedTopic ? getTopicById(selectedTopic)?.description : 'Click to configure language (JS, TS, Python) and target specific bug archetypes.'}
+
+                  {/* Difficulty selector buttons */}
+                  <div>
+                    <div
+                      style={{
+                        fontSize: '0.62rem',
+                        fontFamily: 'var(--font-arcade)',
+                        color: '#8199B5',
+                        marginBottom: '8px',
+                        letterSpacing: '1px',
+                      }}
+                    >
+                      SELECT DIFFICULTY PROTOCOL:
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {(['easy', 'medium', 'hard'] as const).map((d) => (
+                        <button
+                          key={d}
+                          className={`btn-difficulty${difficulty === d ? ' active' : ''}`}
+                          onClick={() => {
+                            setDifficulty(d);
+                            play('click');
+                          }}
+                        >
+                          {d === 'easy' && '▷ '}
+                          {d === 'medium' && '▶ '}
+                          {d === 'hard' && '◆ '}
+                          {d.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Primary Start CTA Button */}
+                  <button
+                    className="btn-pixel-primary"
+                    onClick={handleNewChallenge}
+                    disabled={loading}
+                    style={{
+                      padding: '16px 28px',
+                      fontSize: '0.95rem',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      opacity: loading ? 0.6 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px',
+                    }}
+                  >
+                    {loading ? (
+                      <>
+                        <Activity size={18} className="animate-spin" />
+                        <span className="pixel-blink-cursor">INITIALIZING MATRIX SIMULATION</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap size={18} /> ENTER THE ARENA • INITIATE BOUNTY
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Telemetry Strip */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '20px',
+                    fontSize: '0.7rem',
+                    color: '#8199B5',
+                    fontFamily: 'var(--font-mono)',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Shield size={12} color="#00D9FF" /> V8 WORKER ISOLATION
+                  </span>
+                  <span>•</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Cpu size={12} color="#65CFFF" /> DEXIE PERSISTENCE
+                  </span>
+                  <span>•</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Sparkles size={12} color="#B8D8EA" /> LZ-COMPRESSION SHARING
+                  </span>
                 </div>
               </div>
 
-              {/* Difficulty selector buttons */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {(['easy', 'medium', 'hard'] as const).map((d) => (
-                  <button
-                    key={d}
-                    className={`badge badge-${d}`}
-                    style={{
-                      cursor: 'pointer',
-                      padding: '8px 16px',
-                      fontSize: '0.75rem',
-                      border:
-                        difficulty === d
-                          ? '2px solid currentColor'
-                          : '1px solid transparent',
-                      transform: difficulty === d ? 'scale(1.1)' : 'scale(1)',
-                      transition: 'all 0.2s var(--ease-spring)',
-                    }}
-                    onClick={() => {
-                      setDifficulty(d);
-                      play('click');
-                    }}
-                  >
-                    {d.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                className="btn-neon btn-neon-green"
-                onClick={handleNewChallenge}
-                disabled={loading}
+              {/* Right Column: Interactive 3D Ice Crystal Holographic Unit */}
+              <div
+                className="pixel-box hud-corner-brackets"
                 style={{
-                  padding: '16px 32px',
-                  fontSize: '1rem',
-                  opacity: loading ? 0.5 : 1,
+                  minHeight: '440px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  background: 'radial-gradient(ellipse at center, rgba(8, 20, 38, 0.95) 0%, rgba(5, 11, 24, 0.98) 100%)',
+                  border: '1px solid rgba(0, 217, 255, 0.35)',
+                  boxShadow: '0 20px 50px rgba(5, 11, 24, 0.8), 0 0 30px rgba(0, 217, 255, 0.1)',
                 }}
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {loading ? (
-                    <>⏳ Generating Challenge...</>
-                  ) : (
-                    <>
-                      <Zap size={20} /> Start Challenge
-                    </>
-                  )}
-                </span>
-              </button>
+                {/* 3D Holographic Canvas */}
+                <IceCrystalCanvas />
+
+                {/* HUD Coordinate Overlays */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    left: '14px',
+                    fontSize: '0.6rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: '#8199B5',
+                    pointerEvents: 'none',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  <div>OBJECT: ICE_PRISM_3D</div>
+                  <div>FACETS: 16 • VERTICES: 12</div>
+                  <div style={{ color: '#00D9FF' }}>INTERACTION: CURSOR REACTIVE</div>
+                </div>
+
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '12px',
+                    right: '14px',
+                    fontSize: '0.6rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: '#8199B5',
+                    textAlign: 'right',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <div>QUANTUM REFRACTION: 1.42</div>
+                  <div style={{ color: '#65CFFF' }}>ROTATION ENGINE: 60 FPS LOCKED</div>
+                </div>
+
+                {/* Loading progress bar overlay */}
+                {phase === 'loading' && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                    }}
+                  >
+                    <div className="pixel-loading-bar" />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        fontSize: '0.55rem',
+                        fontFamily: 'var(--font-arcade)',
+                        color: '#00D9FF',
+                        whiteSpace: 'nowrap',
+                      }}
+                      className="pixel-blink-cursor"
+                    >
+                      GENERATING CHALLENGE
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </ErrorBoundary>
         )}
@@ -662,6 +1018,11 @@ function App() {
         {/* ── Active Gameplay / Review Phase ───────────────────────────────── */}
         {(phase === 'playing' || phase === 'reviewing') && challenge && (
           <>
+            {/* Scoreboard Subtree */}
+            <ErrorBoundary componentName="Scoreboard">
+              <Scoreboard />
+            </ErrorBoundary>
+
             {/* Challenge Info Header & Arcade HUD Subtrees */}
             <div
               style={{
@@ -674,49 +1035,81 @@ function App() {
               {/* Challenge Overview Card */}
               <ErrorBoundary componentName="ChallengeOverview">
                 <div
-                  className="glass-card"
-                  style={{ flex: 1, padding: '20px', minWidth: '300px' }}
+                  className="pixel-box hud-corner-brackets"
+                  style={{
+                    flex: 1,
+                    padding: '20px 24px',
+                    minWidth: '300px',
+                    background: 'rgba(8, 20, 38, 0.9)',
+                    border: '1px solid rgba(0, 217, 255, 0.3)',
+                  }}
                 >
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
-                      marginBottom: '8px',
+                      marginBottom: '10px',
                     }}
                   >
                     <span className={`badge badge-${challenge.difficulty}`}>
-                      {challenge.difficulty}
+                      {challenge.difficulty.toUpperCase()}
                     </span>
                     <span
                       className="badge"
                       style={{
-                        background: 'rgba(0,240,255,0.1)',
-                        color: 'var(--neon-cyan)',
-                        border: '1px solid rgba(0,240,255,0.2)',
+                        background: 'rgba(0, 217, 255, 0.1)',
+                        color: '#00D9FF',
+                        border: '1px solid rgba(0, 217, 255, 0.3)',
                       }}
                     >
-                      {challenge.category}
+                      {challenge.category.toUpperCase()}
                     </span>
+                    {challenge.challengeStyle && (
+                      <span
+                        className="badge"
+                        style={{
+                          background: 'rgba(40, 123, 255, 0.15)',
+                          color: '#65CFFF',
+                          border: '1px solid rgba(40, 123, 255, 0.4)',
+                        }}
+                      >
+                        STYLE: {challenge.challengeStyle.toUpperCase().replace(/-/g, ' ')}
+                      </span>
+                    )}
                     <span
                       style={{
                         marginLeft: 'auto',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.75rem',
-                        color: 'var(--neon-yellow)',
+                        fontFamily: 'var(--font-arcade)',
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        color: '#00D9FF',
+                        textShadow: '0 0 8px rgba(0, 217, 255, 0.5)',
                       }}
                     >
-                      +{challenge.points} pts
+                      +{challenge.points} PTS
                     </span>
                   </div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>
+
+                  <h3
+                    style={{
+                      fontSize: '0.95rem',
+                      fontWeight: 700,
+                      marginBottom: '8px',
+                      color: '#EAF8FF',
+                      fontFamily: 'var(--font-arcade)',
+                      lineHeight: 1.4,
+                      letterSpacing: '0.5px',
+                    }}
+                  >
                     {challenge.title}
                   </h3>
+
                   <p
                     style={{
-                      color: 'var(--text-secondary)',
+                      color: '#8199B5',
                       fontSize: '0.85rem',
-                      lineHeight: 1.5,
+                      lineHeight: 1.55,
                     }}
                   >
                     {challenge.description}
@@ -725,7 +1118,7 @@ function App() {
                   {/* Hotkey notice & Serverless share action */}
                   <div
                     style={{
-                      marginTop: '12px',
+                      marginTop: '14px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -736,42 +1129,35 @@ function App() {
                     <div
                       style={{
                         fontSize: '0.7rem',
-                        color: 'var(--text-muted)',
+                        color: '#8199B5',
                         fontFamily: 'var(--font-mono)',
                       }}
                     >
                       <span
                         style={{
-                          background: 'rgba(0,229,255,0.1)',
-                          border: '1px solid rgba(0,229,255,0.3)',
-                          borderRadius: '4px',
-                          padding: '1px 6px',
-                          color: 'var(--neon-cyan)',
-                          marginRight: '4px',
+                          background: 'rgba(0, 217, 255, 0.12)',
+                          border: '1px solid rgba(0, 217, 255, 0.4)',
+                          borderRadius: '2px',
+                          padding: '2px 6px',
+                          color: '#00D9FF',
+                          marginRight: '6px',
                         }}
                       >
                         Ctrl+Enter
                       </span>
-                      to submit fix from editor
+                      to submit code fix from editor
                     </div>
 
                     <button
                       onClick={handleShareChallenge}
+                      className="btn-pixel-cyber"
                       style={{
-                        background: 'rgba(0, 240, 255, 0.1)',
-                        border: '1px solid var(--neon-cyan)',
-                        color: 'var(--neon-cyan)',
-                        borderRadius: '4px',
                         padding: '4px 10px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
                         fontSize: '0.7rem',
                       }}
                       title="Copy compressed challenge link to clipboard"
                     >
-                      <Share2 size={12} /> Share URL
+                      <Share2 size={12} color="#00D9FF" /> Share URL
                     </button>
                   </div>
                 </div>
@@ -792,7 +1178,7 @@ function App() {
                   gridTemplateRows: '1fr auto',
                   gap: '16px',
                   flex: 1,
-                  minHeight: '450px',
+                  minHeight: '480px',
                 }}
               >
                 <CodeEditor
@@ -804,12 +1190,14 @@ function App() {
 
                 {/* Sandbox terminal console */}
                 <div
-                  className="glass-card"
+                  className="pixel-box"
                   style={{
                     padding: '16px',
-                    minHeight: '100px',
-                    maxHeight: '200px',
+                    minHeight: '110px',
+                    maxHeight: '220px',
                     overflow: 'auto',
+                    background: '#050B18',
+                    border: '1px solid rgba(0, 217, 255, 0.25)',
                   }}
                 >
                   <div
@@ -818,30 +1206,33 @@ function App() {
                       alignItems: 'center',
                       gap: '6px',
                       marginBottom: '8px',
+                      borderBottom: '1px solid rgba(129, 153, 181, 0.15)',
+                      paddingBottom: '6px',
                     }}
                   >
-                    <Terminal size={14} color="var(--neon-green)" />
+                    <Terminal size={14} color="#00D9FF" />
                     <span
                       style={{
                         fontSize: '0.7rem',
-                        color: 'var(--text-secondary)',
-                        fontWeight: 600,
+                        color: '#8199B5',
+                        fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '1px',
+                        fontFamily: 'var(--font-mono)',
                       }}
                     >
-                      Console
+                      SANDBOX EXECUTION CONSOLE
                     </span>
                     {isRunning && (
                       <span
                         style={{
                           marginLeft: 'auto',
                           fontSize: '0.65rem',
-                          color: 'var(--neon-yellow)',
+                          color: '#00D9FF',
                           fontFamily: 'var(--font-mono)',
                         }}
                       >
-                        ⏳ running…
+                        [EXECUTING WORKER...]
                       </span>
                     )}
                   </div>
@@ -849,16 +1240,16 @@ function App() {
                     style={{
                       fontFamily: 'var(--font-mono)',
                       fontSize: '0.8rem',
-                      color: consoleOutput.startsWith('✅')
-                        ? 'var(--neon-green)'
-                        : consoleOutput.startsWith('❌')
-                        ? 'var(--neon-red)'
-                        : 'var(--text-primary)',
+                      color: consoleOutput.startsWith('[OK]')
+                        ? '#00D9FF'
+                        : consoleOutput.startsWith('[FAIL]') || consoleOutput.startsWith('[CRITICAL]')
+                        ? '#FF3B69'
+                        : '#8199B5',
                       whiteSpace: 'pre-wrap',
                       margin: 0,
                     }}
                   >
-                    {consoleOutput || '// Run your code to inspect output...'}
+                    {consoleOutput || 'Click [Run Tests] or edit code to inspect execution output.'}
                   </pre>
                 </div>
               </div>
@@ -876,71 +1267,73 @@ function App() {
               >
                 {/* Surrender button */}
                 <button
-                  className="btn-neon btn-neon-red"
+                  className="btn-pixel-cyber"
                   onClick={handleOpenSurrender}
                   disabled={submitting}
+                  style={{
+                    borderColor: 'rgba(255, 59, 105, 0.5)',
+                    color: '#FF3B69',
+                    background: 'rgba(255, 59, 105, 0.08)',
+                  }}
                   title="Forfeit challenge and reveal reference solution"
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Flag size={16} /> Surrender
-                  </span>
+                  <Flag size={14} color="#FF3B69" /> Surrender
                 </button>
 
                 {/* Progressive hint button */}
                 <button
-                  className="btn-neon btn-neon-yellow"
+                  className="btn-pixel-cyber"
                   onClick={handleOpenHint}
-                  disabled={
-                    hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0
-                  }
+                  disabled={hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0}
                   style={{
-                    opacity:
-                      hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0
-                        ? 0.5
-                        : 1,
+                    opacity: hintContext.hintsUsed >= hintContext.maxHints || timeRemaining <= 0 ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Lightbulb size={16} /> Hint ({hintContext.hintsUsed}/
-                    {hintContext.maxHints})
-                  </span>
+                  <Lightbulb size={14} color="#B8D8EA" /> Hint ({hintContext.hintsUsed}/
+                  {hintContext.maxHints})
                 </button>
 
                 {/* Sandboxed execution trigger */}
                 <button
-                  className="btn-neon"
+                  className="btn-pixel-cyber"
                   onClick={handleRunCode}
                   disabled={isRunning}
                   style={{ opacity: isRunning ? 0.5 : 1 }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Play size={16} /> {isRunning ? 'Running...' : 'Run Tests'}
-                  </span>
+                  <Play size={14} color="#00D9FF" /> {isRunning ? 'Executing...' : 'Run Tests'}
+                </button>
+
+                {/* Next Challenge button */}
+                <button
+                  className="btn-pixel-cyber"
+                  onClick={handleNewChallenge}
+                  disabled={loading}
+                  title="Generate a fresh non-repeating challenge"
+                >
+                  <Sparkles size={14} color="#65CFFF" /> Next Challenge
                 </button>
 
                 {/* Game reset button */}
                 <button
-                  className="btn-neon"
+                  className="btn-pixel-cyber"
                   onClick={() => {
                     resetGame();
                     play('click');
                   }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <RotateCcw size={16} /> Reset
-                  </span>
+                  <RotateCcw size={14} color="#8199B5" /> Reset
                 </button>
 
                 {/* Solution submission button */}
                 <button
-                  className="btn-neon btn-neon-green"
+                  className="btn-pixel-primary"
                   onClick={handleSubmit}
                   disabled={submitting || timeRemaining <= 0}
-                  style={{ opacity: submitting || timeRemaining <= 0 ? 0.5 : 1 }}
+                  style={{
+                    opacity: submitting || timeRemaining <= 0 ? 0.5 : 1,
+                  }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Send size={16} /> {submitting ? 'Reviewing...' : 'Submit Fix'}
-                  </span>
+                  <Send size={15} /> {submitting ? 'Verifying Fix...' : 'Submit Fix'}
                 </button>
               </div>
             </ErrorBoundary>
@@ -951,16 +1344,25 @@ function App() {
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer
         style={{
-          padding: '12px 24px',
-          borderTop: '1px solid var(--border-subtle)',
+          padding: '14px 28px',
+          borderTop: '1px solid rgba(0, 217, 255, 0.15)',
+          backgroundColor: '#050B18',
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           fontSize: '0.7rem',
-          color: 'var(--text-muted)',
+          color: '#8199B5',
           fontFamily: 'var(--font-mono)',
+          flexWrap: 'wrap',
+          gap: '8px',
         }}
       >
-        CodeDuel: BugBounty Arena — Scoring Engine • Calendar Streaks • Dexie Persistence • LZ-String Sharing
+        <div>
+          CODEDUEL: ICE MATRIX • ADVANCED PIXEL CYBERPUNK • MULTI-LANGUAGE ARENA
+        </div>
+        <div style={{ color: '#00D9FF' }}>
+          PRESS [SHIFT+M] FOR DATA MATRIX STREAM
+        </div>
       </footer>
 
       {/* ── Modal Dialog Portals Subtree ──────────────────────────────────── */}

@@ -16,7 +16,9 @@ export interface GenerateChallengeParams {
   difficulty?: 'easy' | 'medium' | 'hard' | string;
   category?: string;
   topic?: string;
+  challengeStyle?: string;
   excludeIds?: string[];
+  recentFingerprints?: string[];
   language?: string;
 }
 

@@ -1,6 +1,6 @@
 /**
  * @file DefeatModal.tsx
- * @description Modal dialog rendered upon defeat, timer expiration, or forfeit.
+ * @description Modal dialog rendered upon defeat, timer expiration, or forfeit — ICE MATRIX edition.
  * Resets local daily calendar streak records in IndexedDB and reveals the reference bug description.
  */
 
@@ -56,50 +56,63 @@ export function DefeatModal({ onNextChallenge }: DefeatModalProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.82)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(5, 11, 24, 0.88)',
+        backdropFilter: 'blur(12px)',
       }}
     >
       <div
-        className="glass-card animate-shake"
+        className="pixel-box hud-corner-brackets animate-screen-shake"
         style={{
           padding: '36px',
-          maxWidth: '500px',
+          maxWidth: '520px',
           width: '92%',
           textAlign: 'center',
-          border: '1px solid rgba(255, 0, 60, 0.45)',
-          boxShadow: '0 0 40px rgba(255, 0, 60, 0.25)',
+          background: 'rgba(8, 20, 38, 0.95)',
+          border: '1px solid rgba(255, 59, 105, 0.5)',
+          boxShadow: '0 24px 60px rgba(5, 11, 24, 0.9), 0 0 35px rgba(255, 59, 105, 0.25)',
         }}
       >
         <div
           style={{
             display: 'inline-flex',
             padding: '12px',
-            borderRadius: '50%',
-            background: 'rgba(255, 0, 60, 0.1)',
+            background: 'rgba(255, 59, 105, 0.12)',
+            border: '1px solid rgba(255, 59, 105, 0.4)',
             marginBottom: '14px',
-            color: 'var(--neon-red)',
+            color: '#FF3B69',
           }}
+          className="pixel-box"
         >
-          <AlertOctagon size={32} />
+          <AlertOctagon size={30} />
+        </div>
+
+        <div className="pixel-status-badge" style={{ marginBottom: '8px', color: '#FF3B69', borderColor: 'rgba(255, 59, 105, 0.4)' }}>
+          {isSurrendered ? 'SESSION STATUS: FORFEITED' : 'SESSION STATUS: CRYO-TIMER DEPLETED'}
         </div>
 
         <div
           className="arcade-text"
-          style={{ fontSize: '1.15rem', color: 'var(--neon-red)', marginBottom: '8px' }}
+          style={{ fontSize: '1.2rem', color: '#FF3B69', marginBottom: '8px' }}
         >
-          {isSurrendered ? '🏳️ FORFEITED' : "💥 TIME'S UP!"}
+          {isSurrendered ? 'CHALLENGE SURRENDERED' : 'SYSTEM LOCKOUT • TIME EXPIRED'}
         </div>
 
-        <div style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '0.85rem' }}>
-          {challenge.title}
+        <div
+          style={{
+            color: '#8199B5',
+            marginBottom: '20px',
+            fontSize: '0.85rem',
+            fontFamily: 'var(--font-mono)',
+          }}
+        >
+          TARGET: {challenge.title}
         </div>
 
         {/* Reference bug explanation container */}
         <div
           style={{
-            background: 'var(--bg-tertiary)',
-            borderRadius: 'var(--radius-md)',
+            background: '#050B18',
+            border: '1px solid rgba(0, 217, 255, 0.25)',
             padding: '16px',
             marginBottom: '24px',
             textAlign: 'left',
@@ -107,41 +120,42 @@ export function DefeatModal({ onNextChallenge }: DefeatModalProps) {
         >
           <div
             style={{
-              fontSize: '0.7rem',
-              color: 'var(--neon-yellow)',
+              fontSize: '0.65rem',
+              color: '#00D9FF',
               marginBottom: '8px',
               fontWeight: 700,
               letterSpacing: '1px',
+              fontFamily: 'var(--font-mono)',
             }}
           >
-            THE INTENTIONAL BUG WAS:
+            REFERENCE ANOMALY ANALYSIS:
           </div>
           <div
             style={{
-              fontSize: '0.82rem',
-              color: 'var(--text-primary)',
               fontFamily: 'var(--font-mono)',
-              lineHeight: 1.6,
+              fontSize: '0.82rem',
+              color: '#EAF8FF',
+              lineHeight: 1.55,
             }}
           >
             {challenge.bugDescription}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <button className="btn-neon" onClick={resetGame}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <RotateCcw size={16} /> Return to Menu
-            </span>
-          </button>
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
-            className="btn-neon btn-neon-green"
+            className="btn-pixel-cyber"
+            onClick={() => resetGame()}
+          >
+            <RotateCcw size={14} color="#8199B5" /> Return to Lobby
+          </button>
+
+          <button
+            className="btn-pixel-primary"
             onClick={handleNext}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>🎮 Next Challenge</span>
-              <ChevronRight size={16} />
-            </span>
+            Try Another Challenge <ChevronRight size={14} />
           </button>
         </div>
       </div>

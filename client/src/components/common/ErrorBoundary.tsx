@@ -2,9 +2,10 @@
  * @file ErrorBoundary.tsx
  * @description Production-grade React Error Boundary component designed for the CodeDuel arcade interface.
  * Isolates runtime UI failures to specific component trees, preventing cascading crashes across the arena.
+ * Styled in Ice Matrix cyber aesthetics.
  */
 
-import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 
 /**
@@ -138,14 +139,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     return (
       <div
-        className="glass-card animate-shake"
+        className="pixel-box animate-screen-shake"
         role="alert"
         aria-live="assertive"
         style={{
           padding: '24px',
-          border: '1px solid var(--neon-red)',
-          background: 'rgba(255, 0, 85, 0.08)',
-          boxShadow: '0 0 20px rgba(255, 0, 85, 0.2)',
+          border: '1px solid rgba(255, 59, 105, 0.5)',
+          background: 'rgba(8, 20, 38, 0.95)',
+          boxShadow: '0 0 30px rgba(255, 59, 105, 0.25)',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
@@ -157,12 +158,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         {/* Header with status badge */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <AlertTriangle size={24} color="var(--neon-red)" />
+            <AlertTriangle size={24} color="#FF3B69" />
             <h3
               className="arcade-text"
               style={{
                 fontSize: '0.8rem',
-                color: 'var(--neon-red)',
+                color: '#FF3B69',
                 margin: 0,
                 letterSpacing: '1px',
               }}
@@ -176,10 +177,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               fontSize: '0.7rem',
               fontFamily: 'var(--font-mono)',
               padding: '2px 8px',
-              borderRadius: '4px',
-              background: 'rgba(255, 0, 85, 0.15)',
-              color: 'var(--neon-red)',
-              border: '1px solid rgba(255, 0, 85, 0.3)',
+              borderRadius: '2px',
+              background: 'rgba(255, 59, 105, 0.15)',
+              color: '#FF3B69',
+              border: '1px solid rgba(255, 59, 105, 0.3)',
             }}
           >
             FAULT: {componentLabel}
@@ -189,7 +190,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         {/* Diagnostic explanation */}
         <p
           style={{
-            color: 'var(--text-secondary)',
+            color: '#8199B5',
             fontSize: '0.85rem',
             lineHeight: 1.5,
             margin: 0,
@@ -199,115 +200,59 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           operating normally. You may attempt to recover this component or inspect technical diagnostics below.
         </p>
 
-        {/* Error message snippet */}
-        <div
-          style={{
-            padding: '10px 14px',
-            background: 'rgba(9, 10, 15, 0.85)',
-            border: '1px solid rgba(255, 0, 85, 0.2)',
-            borderRadius: '6px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.75rem',
-            color: 'var(--neon-red)',
-            wordBreak: 'break-word',
-          }}
-        >
-          <code>{errorMessage}</code>
-        </div>
-
-        {/* Expandable technical details */}
-        <div>
+        {/* Action button & technical toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <button
-            type="button"
+            className="btn-pixel-cyber"
+            onClick={this.resetErrorBoundary}
+            style={{ borderColor: '#00D9FF', color: '#00D9FF' }}
+          >
+            <RotateCcw size={14} color="#00D9FF" /> Recover Subtree
+          </button>
+
+          <button
             onClick={this.toggleDetails}
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--text-muted)',
+              color: '#8199B5',
               cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.7rem',
+              fontSize: '0.75rem',
               fontFamily: 'var(--font-mono)',
-              padding: '4px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
             }}
           >
+            <span>{showDetails ? 'Hide Diagnostics' : 'Show Technical Stack Trace'}</span>
             {showDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            {showDetails ? 'Hide Diagnostics' : 'Show Stack Diagnostics'}
           </button>
-
-          {showDetails && (
-            <div
-              style={{
-                marginTop: '10px',
-                padding: '12px',
-                background: '#090A0F',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '6px',
-                maxHeight: '200px',
-                overflow: 'auto',
-              }}
-            >
-              <pre
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.7rem',
-                  color: 'var(--text-secondary)',
-                  whiteSpace: 'pre-wrap',
-                  margin: 0,
-                }}
-              >
-                {error?.stack || 'No JavaScript call stack available.'}
-                {errorInfo?.componentStack && `\n\nComponent Hierarchy:${errorInfo.componentStack}`}
-              </pre>
-            </div>
-          )}
         </div>
 
-        {/* Action button controls */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
-          <button
-            type="button"
-            className="btn-neon btn-neon-red"
-            onClick={this.resetErrorBoundary}
-            style={{ fontSize: '0.75rem', padding: '8px 16px' }}
+        {/* Stack trace panel */}
+        {showDetails && (
+          <div
+            style={{
+              background: '#050B18',
+              border: '1px solid rgba(255, 59, 105, 0.3)',
+              padding: '12px',
+              fontSize: '0.75rem',
+              fontFamily: 'var(--font-mono)',
+              color: '#FF3B69',
+              maxHeight: '200px',
+              overflow: 'auto',
+              whiteSpace: 'pre-wrap',
+            }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <RotateCcw size={14} /> Retry Subtree
-            </span>
-          </button>
-        </div>
+            <div style={{ fontWeight: 700, marginBottom: '6px' }}>{errorMessage}</div>
+            {errorInfo?.componentStack && (
+              <div style={{ color: '#8199B5', fontSize: '0.7rem' }}>
+                {errorInfo.componentStack}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
 }
-
-/**
- * Higher-order component to wrap any functional or class component in an ErrorBoundary.
- *
- * @param WrappedComponent The React component to wrap.
- * @param boundaryProps Configuration properties passed to the boundary instance.
- * @returns Wrapped component protected by the ErrorBoundary.
- */
-export function withErrorBoundary<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  boundaryProps?: Omit<ErrorBoundaryProps, 'children'>
-): React.FC<P> {
-  const componentName =
-    boundaryProps?.componentName ||
-    WrappedComponent.displayName ||
-    WrappedComponent.name ||
-    'Component';
-
-  const WithErrorBoundary: React.FC<P> = (props: P) => (
-    <ErrorBoundary {...boundaryProps} componentName={componentName}>
-      <WrappedComponent {...props} />
-    </ErrorBoundary>
-  );
-
-  WithErrorBoundary.displayName = `WithErrorBoundary(${componentName})`;
-  return WithErrorBoundary;
-}
-
-export default ErrorBoundary;

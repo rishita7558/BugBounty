@@ -1,6 +1,6 @@
 /**
  * @file PlayerProfileModal.tsx
- * @description Modal dialog managing player callsign identity and career progression.
+ * @description Modal dialog managing player callsign identity and career progression — ICE MATRIX edition.
  * Reads and persists hacker profiles, unlocked achievement badges, and solved bounty vouchers
  * directly in client-side IndexedDB (Dexie).
  */
@@ -15,7 +15,7 @@ import {
 } from '@/lib/db';
 import { ArcadeTicketModal } from '@/components/arcade/ArcadeTicketModal';
 import { type BountyTicketData } from '@/lib/ticketGenerator';
-import { User, Award, Flame, Trophy, Ticket, X, Clock, ShieldCheck } from 'lucide-react';
+import { User, Award, Trophy, Ticket, X, Clock, ShieldCheck } from 'lucide-react';
 
 /**
  * Properties accepted by the PlayerProfileModal component.
@@ -90,32 +90,33 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'rgba(5, 5, 12, 0.85)',
-          backdropFilter: 'blur(10px)',
+          background: 'rgba(5, 11, 24, 0.88)',
+          backdropFilter: 'blur(12px)',
           padding: '20px',
         }}
       >
         <div
-          className="glass-card"
+          className="pixel-box hud-corner-brackets"
           style={{
-            maxWidth: '650px',
+            maxWidth: '660px',
             width: '100%',
             maxHeight: '85vh',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
-            padding: '24px',
-            border: '1px solid var(--border-neon)',
-            boxShadow: '0 0 35px rgba(0, 240, 255, 0.25)',
+            padding: '28px',
+            background: 'rgba(8, 20, 38, 0.95)',
+            border: '1px solid rgba(0, 217, 255, 0.4)',
+            boxShadow: '0 24px 60px rgba(5, 11, 24, 0.9), 0 0 35px rgba(0, 217, 255, 0.2)',
             overflowY: 'auto',
           }}
         >
           {/* Header bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <User size={24} color="var(--neon-cyan)" />
-              <h2 className="arcade-text neon-text" style={{ fontSize: '0.9rem', margin: 0 }}>
-                HACKER PROFILE & PERSISTENCE
+              <User size={22} color="#00D9FF" />
+              <h2 className="arcade-text neon-text" style={{ fontSize: '0.85rem', margin: 0 }}>
+                HACKER IDENTITY & PERSISTENCE
               </h2>
             </div>
             <button
@@ -123,7 +124,7 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--text-muted)',
+                color: '#8199B5',
                 cursor: 'pointer',
                 padding: '4px',
               }}
@@ -134,7 +135,7 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
 
           {/* Callsign Editor & Overview */}
           <div
-            className="glass-card"
+            className="pixel-box"
             style={{
               padding: '16px 20px',
               display: 'flex',
@@ -142,41 +143,41 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
               justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: '12px',
-              background: 'rgba(0, 240, 255, 0.04)',
+              background: 'rgba(5, 11, 24, 0.8)',
+              border: '1px solid rgba(0, 217, 255, 0.25)',
             }}
           >
             <div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Hacker Callsign
+              <div style={{ fontSize: '0.65rem', color: '#8199B5', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
+                OPERATOR CALLSIGN
               </div>
               {isEditing ? (
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                   <input
                     type="text"
                     value={editCallsign}
                     onChange={(e) => setEditCallsign(e.target.value)}
                     maxLength={18}
                     style={{
-                      background: 'var(--bg-tertiary)',
-                      border: '1px solid var(--neon-cyan)',
-                      color: 'var(--neon-cyan)',
+                      background: '#081426',
+                      border: '1px solid #00D9FF',
+                      color: '#00D9FF',
                       padding: '4px 8px',
-                      borderRadius: '4px',
                       fontFamily: 'var(--font-mono)',
                       fontSize: '0.9rem',
                     }}
                   />
                   <button
-                    className="btn-neon btn-neon-green"
+                    className="btn-pixel-primary"
                     onClick={handleSaveCallsign}
-                    style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                    style={{ padding: '4px 12px', fontSize: '0.75rem' }}
                   >
-                    <span>Save</span>
+                    Save
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--neon-cyan)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#00D9FF', fontFamily: 'var(--font-mono)' }}>
                     {profile?.callsign || 'CYBER_HUNTER'}
                   </span>
                   <button
@@ -184,9 +185,10 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: 'var(--text-muted)',
+                      color: '#8199B5',
                       cursor: 'pointer',
                       fontSize: '0.7rem',
+                      fontFamily: 'var(--font-mono)',
                       textDecoration: 'underline',
                     }}
                   >
@@ -196,21 +198,21 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '20px' }}>
+            <div style={{ display: 'flex', gap: '24px' }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--neon-yellow)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#00D9FF' }}>
                   <Trophy size={14} />
-                  <span style={{ fontWeight: 700, fontSize: '1rem' }}>{profile?.totalScore || 0}</span>
+                  <span style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{profile?.totalScore || 0}</span>
                 </div>
-                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>TOTAL BOUNTY</div>
+                <div style={{ fontSize: '0.6rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>TOTAL BOUNTY</div>
               </div>
 
               <div style={{ textAlign: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--neon-magenta)' }}>
-                  <Flame size={14} />
-                  <span style={{ fontWeight: 700, fontSize: '1rem' }}>{profile?.currentStreak || 0}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#65CFFF' }}>
+                  <ShieldCheck size={14} />
+                  <span style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{profile?.currentStreak || 0}D</span>
                 </div>
-                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>CURRENT STREAK</div>
+                <div style={{ fontSize: '0.6rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>DAILY STREAK</div>
               </div>
             </div>
           </div>
@@ -218,30 +220,24 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
           {/* Badges Section */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <Award size={16} color="var(--neon-yellow)" />
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-                Unlocked Hacker Badges
+              <Award size={15} color="#00D9FF" />
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>
+                Unlocked Security Badges
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {profile?.unlockedBadges.map((badge) => (
                 <span
                   key={badge}
-                  className="badge pixel-badge"
+                  className="pixel-status-badge"
                   style={{
-                    background: 'rgba(255, 230, 0, 0.1)',
-                    border: '1px solid rgba(255, 230, 0, 0.4)',
-                    color: 'var(--neon-yellow)',
                     fontSize: '0.7rem',
                     padding: '4px 10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    WebkitPrintColorAdjust: 'exact',
-                    printColorAdjust: 'exact',
+                    borderColor: 'rgba(0, 217, 255, 0.35)',
+                    color: '#EAF8FF',
                   }}
                 >
-                  <ShieldCheck size={12} /> {badge.replace(/_/g, ' ')}
+                  <ShieldCheck size={12} color="#00D9FF" /> {badge.replace(/_/g, ' ')}
                 </span>
               ))}
             </div>
@@ -251,12 +247,12 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Ticket size={16} color="var(--neon-green)" />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                <Ticket size={15} color="#65CFFF" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>
                   Dexie.js Solved Bounties ({solvedList.length})
                 </span>
               </div>
-              <span style={{ fontSize: '0.65rem', color: 'var(--neon-cyan)', fontFamily: 'var(--font-mono)' }}>
+              <span style={{ fontSize: '0.65rem', color: '#00D9FF', fontFamily: 'var(--font-mono)' }}>
                 ● Local IndexedDB Zero-DB
               </span>
             </div>
@@ -266,26 +262,29 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
                 style={{
                   padding: '24px',
                   textAlign: 'center',
-                  color: 'var(--text-muted)',
+                  color: '#8199B5',
                   fontSize: '0.8rem',
-                  border: '1px dashed var(--border-subtle)',
-                  borderRadius: '8px',
+                  border: '1px dashed rgba(129, 153, 181, 0.25)',
+                  background: 'rgba(5, 11, 24, 0.6)',
+                  fontFamily: 'var(--font-mono)',
                 }}
               >
-                No solved challenges yet. Squash your first bug in the arena!
+                No solved challenges recorded yet. Remediate your first vulnerability in the arena!
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {solvedList.map((item) => (
                   <div
                     key={item.id}
-                    className="glass-card"
+                    className="pixel-box"
                     style={{
                       padding: '12px 16px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: '12px',
+                      background: 'rgba(5, 11, 24, 0.8)',
+                      border: '1px solid rgba(0, 217, 255, 0.2)',
                     }}
                   >
                     <div>
@@ -293,23 +292,21 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
                         <span className={`badge badge-${item.difficulty.toLowerCase()}`}>
                           {item.difficulty}
                         </span>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.title}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#EAF8FF' }}>{item.title}</span>
                       </div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', gap: '10px' }}>
-                        <span>+{item.bountyPointsEarned} pts</span>
+                      <div style={{ fontSize: '0.65rem', color: '#8199B5', marginTop: '4px', display: 'flex', gap: '10px', fontFamily: 'var(--font-mono)' }}>
+                        <span style={{ color: '#00D9FF' }}>+{item.bountyPointsEarned} pts</span>
                         <span><Clock size={10} style={{ display: 'inline', marginRight: '2px' }} />{item.timeSpentSeconds}s</span>
                         <span>{new Date(item.solvedAt).toLocaleDateString()}</span>
                       </div>
                     </div>
 
                     <button
-                      className="btn-neon"
+                      className="btn-pixel-cyber"
                       onClick={() => handleOpenTicket(item)}
                       style={{ padding: '6px 12px', fontSize: '0.7rem' }}
                     >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Ticket size={12} /> Voucher
-                      </span>
+                      <Ticket size={12} color="#00D9FF" /> Voucher
                     </button>
                   </div>
                 ))}

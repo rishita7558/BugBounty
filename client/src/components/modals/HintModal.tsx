@@ -1,6 +1,6 @@
 /**
  * @file HintModal.tsx
- * @description Progressive hint dialog governed by the HintStateMachine.
+ * @description Progressive hint dialog governed by the HintStateMachine — ICE MATRIX edition.
  * Manages confirmation transitions, penalty disclosures (-15% per tier),
  * remote hint retrieval, and historical audit trail records for applied clues.
  */
@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { getHint } from '@/services/api';
-import { Lightbulb, AlertTriangle, CheckCircle2, History, X } from 'lucide-react';
+import { Lightbulb, AlertTriangle, History, X } from 'lucide-react';
 
 /**
  * Properties accepted by the HintModal component.
@@ -110,19 +110,20 @@ export function HintModal({ open, onClose }: HintModalProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(6px)',
+        background: 'rgba(5, 11, 24, 0.88)',
+        backdropFilter: 'blur(10px)',
       }}
       onClick={handleClose}
     >
       <div
-        className="glass-card animate-score-pop"
+        className="pixel-box hud-corner-brackets animate-score-pop"
         style={{
-          padding: '28px',
-          maxWidth: '500px',
+          padding: '30px',
+          maxWidth: '520px',
           width: '92%',
-          border: '1px solid rgba(255, 230, 0, 0.35)',
-          boxShadow: '0 0 30px rgba(255, 230, 0, 0.15)',
+          background: 'rgba(8, 20, 38, 0.95)',
+          border: '1px solid rgba(0, 217, 255, 0.4)',
+          boxShadow: '0 20px 50px rgba(5, 11, 24, 0.9), 0 0 30px rgba(0, 217, 255, 0.2)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -136,10 +137,10 @@ export function HintModal({ open, onClose }: HintModalProps) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Lightbulb size={20} color="var(--neon-yellow)" />
+            <Lightbulb size={20} color="#00D9FF" />
             <span
               className="arcade-text"
-              style={{ fontSize: '0.75rem', color: 'var(--neon-yellow)' }}
+              style={{ fontSize: '0.75rem', color: '#00D9FF' }}
             >
               HINT PROTOCOL — {hintsUsed}/{maxHints} USED
             </span>
@@ -149,7 +150,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--text-muted)',
+              color: '#8199B5',
               cursor: 'pointer',
               display: 'flex',
               padding: '4px',
@@ -163,16 +164,16 @@ export function HintModal({ open, onClose }: HintModalProps) {
         {fetchError && (
           <div
             style={{
-              background: 'rgba(255, 0, 85, 0.15)',
-              border: '1px solid rgba(255, 0, 85, 0.4)',
-              borderRadius: 'var(--radius-sm)',
+              background: 'rgba(255, 59, 105, 0.15)',
+              border: '1px solid rgba(255, 59, 105, 0.4)',
               padding: '10px 14px',
               marginBottom: '16px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               fontSize: '0.8rem',
-              color: 'var(--neon-red)',
+              color: '#FF3B69',
+              fontFamily: 'var(--font-mono)',
             }}
           >
             <AlertTriangle size={16} />
@@ -184,9 +185,8 @@ export function HintModal({ open, onClose }: HintModalProps) {
         {isConfirming ? (
           <div
             style={{
-              background: 'rgba(255, 230, 0, 0.08)',
-              border: '1px solid rgba(255, 230, 0, 0.35)',
-              borderRadius: 'var(--radius-md)',
+              background: 'rgba(5, 11, 24, 0.8)',
+              border: '1px solid rgba(0, 217, 255, 0.35)',
               padding: '18px',
               marginBottom: '18px',
             }}
@@ -197,201 +197,153 @@ export function HintModal({ open, onClose }: HintModalProps) {
                 alignItems: 'center',
                 gap: '8px',
                 marginBottom: '10px',
-                color: 'var(--neon-yellow)',
-                fontWeight: 700,
-                fontSize: '0.85rem',
+                color: '#65CFFF',
               }}
             >
-              <AlertTriangle size={18} />
-              <span>Confirm Hint Request (-15% Score Penalty)</span>
+              <AlertTriangle size={18} color="#65CFFF" />
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  letterSpacing: '1px',
+                }}
+              >
+                CONFIRM DECRYPTION PENALTY
+              </span>
             </div>
+
             <p
               style={{
-                color: 'var(--text-secondary)',
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
+                color: '#8199B5',
                 lineHeight: 1.5,
-                margin: '0 0 12px 0',
+                marginBottom: '12px',
               }}
             >
-              Requesting <strong>Level {nextHintLevel} Hint</strong> will deduct{' '}
-              <strong style={{ color: 'var(--neon-red)' }}>15%</strong> from this
-              round&apos;s score potential.
-            </p>
-            <p
-              style={{
-                fontSize: '0.78rem',
-                color: 'var(--text-muted)',
-                fontFamily: 'var(--font-mono)',
-                margin: 0,
-              }}
-            >
-              Level {nextHintLevel}: {getHintLevelDescription(nextHintLevel)}
+              Requesting Hint Tier #{nextHintLevel} applies a <strong>-15% point penalty</strong> to your final round score.
             </p>
 
             <div
               style={{
-                display: 'flex',
-                gap: '12px',
-                justifyContent: 'flex-end',
-                marginTop: '16px',
+                fontSize: '0.75rem',
+                color: '#EAF8FF',
+                background: 'rgba(0, 217, 255, 0.08)',
+                padding: '8px 12px',
+                borderLeft: '2px solid #00D9FF',
+                marginBottom: '16px',
+                fontFamily: 'var(--font-mono)',
               }}
             >
+              Tier {nextHintLevel}: {getHintLevelDescription(nextHintLevel)}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
-                className="btn-neon"
+                className="btn-pixel-cyber"
                 onClick={handleCancelConfirmation}
                 disabled={loading}
               >
-                <span>Cancel</span>
+                Abort
               </button>
               <button
-                className="btn-neon btn-neon-magenta"
+                className="btn-pixel-primary"
                 onClick={handleConfirmAndFetch}
                 disabled={loading}
-                style={{ opacity: loading ? 0.6 : 1 }}
               >
-                <span>{loading ? '⏳ Deducting & Loading...' : 'Confirm (-15%)'}</span>
+                {loading ? 'Decrypting Clue...' : 'Confirm (-15%)'}
               </button>
             </div>
           </div>
         ) : (
-          /* ── State: Revealed / Summary / Audit Log ──────────────────────── */
-          <div>
-            {hintContext.auditLog.length > 0 ? (
+          /* ── State: Ready for Hint Request ───────────────────────────────── */
+          !isExhausted &&
+          !isTimerExpired && (
+            <div
+              style={{
+                background: 'rgba(5, 11, 24, 0.7)',
+                border: '1px solid rgba(0, 217, 255, 0.2)',
+                padding: '16px',
+                marginBottom: '18px',
+              }}
+            >
               <div
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  maxHeight: '260px',
-                  overflowY: 'auto',
-                  marginBottom: '16px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#EAF8FF',
+                  marginBottom: '6px',
+                  fontFamily: 'var(--font-mono)',
                 }}
               >
-                {hintContext.auditLog.map((record) => (
+                Tier {nextHintLevel} Available
+              </div>
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: '#8199B5',
+                  marginBottom: '14px',
+                  lineHeight: 1.4,
+                }}
+              >
+                {getHintLevelDescription(nextHintLevel)}
+              </div>
+              <button
+                className="btn-pixel-primary"
+                onClick={handleStartRequestHint}
+                style={{ width: '100%', padding: '10px' }}
+              >
+                Request Clue Tier {nextHintLevel}
+              </button>
+            </div>
+          )
+        )}
+
+        {/* ── State: Hint Audit Trail ──────────────────────────────────────── */}
+        {hintContext.auditLog.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginBottom: '10px',
+                color: '#8199B5',
+                fontSize: '0.7rem',
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 600,
+                letterSpacing: '1px',
+              }}
+            >
+              <History size={14} color="#00D9FF" /> DECRYPTED CLUES LOG:
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {hintContext.auditLog.map((record, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: '#050B18',
+                    border: '1px solid rgba(0, 217, 255, 0.25)',
+                    padding: '12px',
+                    fontSize: '0.8rem',
+                    color: '#EAF8FF',
+                    fontFamily: 'var(--font-mono)',
+                    lineHeight: 1.5,
+                  }}
+                >
                   <div
-                    key={record.hintIndex}
                     style={{
-                      background: 'var(--bg-tertiary)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '14px',
+                      fontSize: '0.65rem',
+                      color: '#00D9FF',
+                      marginBottom: '4px',
+                      fontWeight: 700,
                     }}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '6px',
-                        fontSize: '0.72rem',
-                        fontFamily: 'var(--font-mono)',
-                      }}
-                    >
-                      <span style={{ color: 'var(--neon-yellow)', fontWeight: 700 }}>
-                        💡 HINT {record.hintIndex}
-                      </span>
-                      <span style={{ color: 'var(--neon-red)' }}>
-                        -{record.penaltyDeducted}% Penalty
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.82rem',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {record.hintText}
-                    </div>
+                    TIER {record.hintIndex} LOG (-{record.penaltyDeducted}%)
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div
-                style={{
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.85rem',
-                  lineHeight: 1.6,
-                  marginBottom: '16px',
-                  background: 'var(--bg-tertiary)',
-                  padding: '16px',
-                  borderRadius: 'var(--radius-md)',
-                }}
-              >
-                Hints provide progressive clues for finding and fixing the intentional
-                bug. Each hint incurs a compound 15% score deduction (capped at 80%).
-              </div>
-            )}
-
-            {/* Audit log summary */}
-            {hintContext.auditLog.length > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.7rem',
-                  color: 'var(--text-muted)',
-                  fontFamily: 'var(--font-mono)',
-                  marginBottom: '16px',
-                }}
-              >
-                <History size={13} />
-                <span>
-                  Audit: {hintContext.auditLog.length} hint(s) recorded • Total penalty:{' '}
-                  {hintContext.auditLog.length * 15}%
-                </span>
-              </div>
-            )}
-
-            {/* Status notice when exhausted or timer expired */}
-            {isTimerExpired && (
-              <div
-                style={{
-                  color: 'var(--neon-red)',
-                  fontSize: '0.75rem',
-                  fontFamily: 'var(--font-mono)',
-                  marginBottom: '14px',
-                }}
-              >
-                ⚠️ Time expired: hint requests are disabled.
-              </div>
-            )}
-
-            {isExhausted && !isTimerExpired && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  color: 'var(--neon-yellow)',
-                  fontSize: '0.75rem',
-                  fontFamily: 'var(--font-mono)',
-                  marginBottom: '14px',
-                }}
-              >
-                <CheckCircle2 size={14} />
-                <span>All {maxHints} hints have been unlocked for this challenge.</span>
-              </div>
-            )}
-
-            {/* Modal controls */}
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button className="btn-neon" onClick={handleClose}>
-                <span>Close</span>
-              </button>
-
-              {!isExhausted && !isTimerExpired && (
-                <button
-                  className="btn-neon btn-neon-yellow"
-                  onClick={handleStartRequestHint}
-                >
-                  <span>
-                    💡 Use Hint {nextHintLevel} (-15%)
-                  </span>
-                </button>
-              )}
+                  {record.hintText}
+                </div>
+              ))}
             </div>
           </div>
         )}

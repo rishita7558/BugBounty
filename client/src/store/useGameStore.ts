@@ -36,6 +36,8 @@ export interface Challenge {
   category: string;
   language?: SupportedLanguage | string;
   topic?: string;
+  challengeStyle?: string;
+  fingerprint?: string;
   buggyCode: string;
   correctCode: string;
   bugLine: number;
