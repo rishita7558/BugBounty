@@ -11,7 +11,17 @@ import OpenAI from 'openai';
 import { generateProceduralChallenge } from './proceduralChallengeGenerator.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const LIVE_MODEL_NAME = 'gemini-2.5-flash';
+const GEMINI_MODELS = Array.from(
+  new Set(
+    [
+      process.env.GEMINI_MODEL,
+      'gemini-flash-lite-latest',
+      'gemini-3.5-flash-lite',
+      'gemini-3.8-flash',
+      'gemini-flash-latest',
+    ].filter(Boolean) as string[]
+  )
+);
 
 type LLMProvider = 'gemini' | 'openai';
 
@@ -56,21 +66,23 @@ export async function queryLLM(systemPrompt: string, userPrompt: string): Promis
   const { provider, key } = getProvider();
 
   if (provider === 'gemini' && key) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: LIVE_MODEL_NAME,
-        systemInstruction: systemPrompt,
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.7,
-        },
-      });
+    for (const modelCandidate of GEMINI_MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelCandidate,
+          systemInstruction: systemPrompt,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.7,
+          },
+        });
 
-      const result = await model.generateContent(userPrompt);
-      const text = result.response.text();
-      return safeParseJSON(text);
-    } catch (err: any) {
-      console.warn(`[LLM Service] Gemini API call failed: ${err.message}. Generating intelligent fallback.`);
+        const result = await model.generateContent(userPrompt);
+        const text = result.response.text();
+        return safeParseJSON(text);
+      } catch (err: any) {
+        console.warn(`[LLM Service] Gemini candidate ${modelCandidate} failed: ${err.message}. Cascading...`);
+      }
     }
   }
 

@@ -2,13 +2,15 @@
  * @file llmQuestionGenerator.ts
  * @description Advanced LLM Question Generation Pipeline for BugBounty Arena.
  * Completely eliminates static fallback dictionaries. Implements exponential backoff with jitter
- * (up to 2 retries), strict JSON schema validation, anti-duplication fingerprint exclusion,
- * and executable flaw verification.
+ * (up to 2 retries), multi-model cascade with live model failover (gemini-flash-lite-latest,
+ * gemini-3.5-flash-lite, gemini-3.8-flash), strict JSON schema validation, anti-duplication
+ * fingerprint exclusion, and dynamic procedural synthesis resilience.
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import crypto from 'crypto';
+import { generateProceduralChallenge } from './proceduralChallengeGenerator.js';
 
 export interface GeneratedChallenge {
   id: string;
@@ -46,7 +48,21 @@ export class LLMGenerationError extends Error {
   }
 }
 
-const LIVE_MODEL_NAME = 'gemini-2.5-flash';
+/**
+ * Ordered list of candidate models for Gemini API.
+ * Prioritizes high-throughput lite models to avoid 503 high-demand spikes.
+ */
+const GEMINI_MODELS = Array.from(
+  new Set(
+    [
+      process.env.GEMINI_MODEL,
+      'gemini-flash-lite-latest',
+      'gemini-3.5-flash-lite',
+      'gemini-3.8-flash',
+      'gemini-flash-latest',
+    ].filter(Boolean) as string[]
+  )
+);
 
 function getProvider(): { provider: 'gemini' | 'openai'; key: string } {
   const geminiKey = process.env.GEMINI_API_KEY;
@@ -138,17 +154,35 @@ function parseAndValidateChallenge(raw: any, params: GenerationParams): Generate
 }
 
 /**
- * Synthesizes a new unique challenge via generative AI with zero static fallbacks.
- * Retries up to 2 times with jitter before throwing a structured LLMGenerationError.
+ * Synthesizes a new unique challenge via generative AI with multi-model cascade
+ * and dynamic procedural fallback resilience.
  */
 export async function generateDynamicChallenge(params: GenerationParams): Promise<GeneratedChallenge> {
   const { provider, key } = getProvider();
 
   if (!key) {
-    throw new LLMGenerationError(
-      'No Generative AI API Key configured on server. Please set GEMINI_API_KEY or OPENAI_API_KEY in environment.',
-      503
-    );
+    console.warn('[llmQuestionGenerator] No AI Key configured; falling back to dynamic procedural generation.');
+    const procedural = generateProceduralChallenge({
+      difficulty: params.difficulty === 'NOVICE' ? 'easy' : params.difficulty === 'VETERAN' ? 'medium' : 'hard',
+      language: params.language,
+      topic: params.topic,
+      category: params.mode,
+      excludeIds: params.excludeIds,
+    });
+    return {
+      id: procedural.id,
+      title: procedural.title,
+      mode: params.mode,
+      language: procedural.language,
+      topic: procedural.topic,
+      difficulty: params.difficulty,
+      bugDescription: procedural.bugDescription,
+      brokenCode: procedural.buggyCode,
+      correctCode: procedural.correctCode,
+      testCases: procedural.testCases,
+      hints: procedural.hints,
+      fingerprint: computeFingerprint(procedural.buggyCode, procedural.topic, procedural.language),
+    };
   }
 
   const exclusions = [
@@ -194,17 +228,33 @@ JSON SCHEMA:
 
       if (provider === 'gemini') {
         const genAI = new GoogleGenerativeAI(key);
-        const model = genAI.getGenerativeModel({
-          model: LIVE_MODEL_NAME,
-          systemInstruction: systemPrompt,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.8,
-          },
-        });
+        let modelSuccess = false;
+        let lastModelErr: any = null;
 
-        const result = await model.generateContent(userPrompt);
-        jsonText = result.response.text();
+        for (const modelCandidate of GEMINI_MODELS) {
+          try {
+            const model = genAI.getGenerativeModel({
+              model: modelCandidate,
+              systemInstruction: systemPrompt,
+              generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: 0.8,
+              },
+            });
+
+            const result = await model.generateContent(userPrompt);
+            jsonText = result.response.text();
+            modelSuccess = true;
+            break;
+          } catch (modelErr: any) {
+            lastModelErr = modelErr;
+            console.warn(`[llmQuestionGenerator] Model candidate ${modelCandidate} unavailable (${modelErr.message}). Cascading...`);
+          }
+        }
+
+        if (!modelSuccess) {
+          throw lastModelErr || new Error('All Gemini model candidates exhausted');
+        }
       } else {
         const openai = new OpenAI({ apiKey: key });
         const completion = await openai.chat.completions.create({
@@ -233,10 +283,39 @@ JSON SCHEMA:
     }
   }
 
-  throw new LLMGenerationError(
-    `Failed to synthesize unique bounty after ${MAX_RETRIES + 1} attempts: ${lastError?.message || 'Unknown LLM fault'}`,
-    502,
-    { originalError: lastError?.message }
+  // Gracefully fall back to dynamic procedural generation if all cloud AI models are down / 503
+  console.warn(
+    `[llmQuestionGenerator] Generative AI pipeline exhausted after retries (${lastError?.message}), activating dynamic procedural synthesis engine.`
   );
-}
 
+  try {
+    const procedural = generateProceduralChallenge({
+      difficulty: params.difficulty === 'NOVICE' ? 'easy' : params.difficulty === 'VETERAN' ? 'medium' : 'hard',
+      language: params.language,
+      topic: params.topic,
+      category: params.mode,
+      excludeIds: params.excludeIds,
+    });
+
+    return {
+      id: procedural.id,
+      title: procedural.title,
+      mode: params.mode,
+      language: procedural.language,
+      topic: procedural.topic,
+      difficulty: params.difficulty,
+      bugDescription: procedural.bugDescription,
+      brokenCode: procedural.buggyCode,
+      correctCode: procedural.correctCode,
+      testCases: procedural.testCases,
+      hints: procedural.hints,
+      fingerprint: computeFingerprint(procedural.buggyCode, procedural.topic, procedural.language),
+    };
+  } catch (procErr: any) {
+    throw new LLMGenerationError(
+      `Failed to synthesize unique bounty after ${MAX_RETRIES + 1} attempts: ${lastError?.message || 'Unknown LLM fault'}`,
+      502,
+      { originalError: lastError?.message, proceduralError: procErr?.message }
+    );
+  }
+}

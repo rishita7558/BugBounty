@@ -363,7 +363,7 @@ export const useGameStore = create<GameState>()(
         set({ actionError: result.error ?? 'Hint request blocked' });
         return { success: false, error: result.error };
       }
-      set({ hintContext: result.nextContext, actionError: null });
+      set({ hintContext: result.nextContext, actionError: null, timerActive: false });
       return { success: true };
     },
 
@@ -393,9 +393,13 @@ export const useGameStore = create<GameState>()(
     },
 
     dismissHint: () => {
-      const { hintContext } = get();
+      const { hintContext, phase, timeRemaining } = get();
       const nextContext = HintStateMachine.dismiss(hintContext);
-      set({ hintContext: nextContext, actionError: null });
+      set({
+        hintContext: nextContext,
+        actionError: null,
+        timerActive: phase === 'playing' && timeRemaining > 0,
+      });
     },
 
     surrender: () => {

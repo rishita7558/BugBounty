@@ -5,10 +5,10 @@
  * remote hint retrieval, and historical audit trail records for applied clues.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { getHint } from '@/services/api';
-import { Lightbulb, AlertTriangle, History, X } from 'lucide-react';
+import { Lightbulb, AlertTriangle, History, X, Pause } from 'lucide-react';
 
 /**
  * Properties accepted by the HintModal component.
@@ -35,9 +35,48 @@ export function HintModal({ open, onClose }: HintModalProps) {
   const confirmHint = useGameStore((s) => s.confirmHint);
   const requestHint = useGameStore((s) => s.requestHint);
   const dismissHint = useGameStore((s) => s.dismissHint);
+  const setTimerActive = useGameStore((s) => s.setTimerActive);
 
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    dismissHint();
+    onClose();
+    const currentPhase = useGameStore.getState().phase;
+    const currentTime = useGameStore.getState().timeRemaining;
+    if (currentPhase === 'playing' && currentTime > 0) {
+      setTimerActive(true);
+    }
+  }, [dismissHint, onClose, setTimerActive]);
+
+  // Pause the countdown timer whenever the clue modal is open or clue is generating
+  useEffect(() => {
+    if (!open) return;
+    setTimerActive(false);
+
+    return () => {
+      // Resume timer on unmount / modal close if challenge is still active
+      const currentPhase = useGameStore.getState().phase;
+      const currentTime = useGameStore.getState().timeRemaining;
+      if (currentPhase === 'playing' && currentTime > 0) {
+        setTimerActive(true);
+      }
+    };
+  }, [open, setTimerActive]);
+
+  // Global Escape keydown listener to close the modal
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, handleClose]);
 
   if (!open || !challenge) return null;
 
@@ -64,6 +103,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
 
   const handleStartRequestHint = () => {
     setFetchError(null);
+    setTimerActive(false); // Explicitly ensure timer is paused on request
     const result = requestHint();
     if (!result.success && result.error) {
       setFetchError(result.error);
@@ -76,6 +116,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
   };
 
   const handleConfirmAndFetch = async () => {
+    setTimerActive(false); // Strictly guarantee countdown is frozen during AI clue processing
     setLoading(true);
     setFetchError(null);
     try {
@@ -94,11 +135,6 @@ export function HintModal({ open, onClose }: HintModalProps) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleClose = () => {
-    dismissHint();
-    onClose();
   };
 
   return (
@@ -158,6 +194,31 @@ export function HintModal({ open, onClose }: HintModalProps) {
           >
             <X size={18} />
           </button>
+        </div>
+
+        {/* Cryo-Timer Pause Notice */}
+        <div
+          style={{
+            border: '1px solid rgba(0, 240, 255, 0.4)',
+            background: 'rgba(0, 240, 255, 0.08)',
+            padding: '8px 12px',
+            marginBottom: '16px',
+            fontSize: '0.7rem',
+            fontFamily: 'var(--font-arcade, monospace)',
+            color: '#00f0ff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Pause size={12} color="#00f0ff" />
+            <span>CRYO-TIMER FROZEN</span>
+          </div>
+          <span style={{ fontSize: '0.62rem', color: '#8199b5', fontFamily: 'var(--font-mono)' }}>
+            Processing time is not deducted
+          </span>
         </div>
 
         {/* Error notification display */}
@@ -251,7 +312,7 @@ export function HintModal({ open, onClose }: HintModalProps) {
                 onClick={handleConfirmAndFetch}
                 disabled={loading}
               >
-                {loading ? 'Decrypting Clue...' : 'Confirm (-15%)'}
+                {loading ? 'Decrypting Clue (Timer Paused)...' : 'Confirm (-15%)'}
               </button>
             </div>
           </div>

@@ -107,6 +107,19 @@ describe('useGameStore Game Mechanics & State Integration', () => {
     expect(state.hintContext.auditLog).toHaveLength(1);
   });
 
+  it('pauses the countdown timer when clue/hint is requested and resumes upon dismissal', () => {
+    useGameStore.getState().setChallenge(mockChallenge);
+    expect(useGameStore.getState().timerActive).toBe(true);
+
+    // Requesting clue pauses timer so processing time is not deducted
+    useGameStore.getState().requestHint();
+    expect(useGameStore.getState().timerActive).toBe(false);
+
+    // Dismissing clue resumes timer
+    useGameStore.getState().dismissHint();
+    expect(useGameStore.getState().timerActive).toBe(true);
+  });
+
   it('transitions to defeat and exhausts hints when timer expires', () => {
     useGameStore.getState().setChallenge(mockChallenge);
     useGameStore.getState().setTimeRemaining(1);

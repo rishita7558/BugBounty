@@ -5,7 +5,7 @@
  * automatically persists progress to IndexedDB (Dexie), and opens printable arcade ticket redemption.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import confetti from 'canvas-confetti';
 import { formatScore } from '@/lib/utils';
@@ -23,6 +23,7 @@ import {
   Ticket,
   Play,
   CheckCircle2,
+  Home,
 } from 'lucide-react';
 
 /**
@@ -115,11 +116,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
     }
   }, [phase, review, challenge, playerCode, timeRemaining, combo, score]);
 
-  if (phase !== 'victory' || !review) return null;
-
-  const breakdown = review.scoreBreakdown ?? lastScoreBreakdown;
-
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     confettiFiredRef.current = false;
     recordedRef.current = null;
     if (onNextChallenge) {
@@ -127,7 +124,33 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
     } else {
       resetGame();
     }
-  };
+  }, [onNextChallenge, resetGame]);
+
+  const handleHome = useCallback(() => {
+    confettiFiredRef.current = false;
+    recordedRef.current = null;
+    resetGame();
+    if (typeof window !== 'undefined') {
+      window.location.hash = '';
+    }
+  }, [resetGame]);
+
+  // Global KeyboardEvent listener for the Escape key to return to homepage
+  useEffect(() => {
+    if (phase !== 'victory') return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' || event.code === 'Escape') {
+        event.preventDefault();
+        handleHome();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, handleHome]);
+
+  if (phase !== 'victory' || !review) return null;
+
+  const breakdown = review.scoreBreakdown ?? lastScoreBreakdown;
 
   return (
     <>
@@ -157,9 +180,40 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
             overflowY: 'auto',
           }}
         >
-          {/* Status Label */}
-          <div className="pixel-status-badge" style={{ marginBottom: '12px' }}>
-            REMEDIATION PROTOCOL: SUCCESS
+          {/* Status Label & Exit to Home Button */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '16px',
+            }}
+          >
+            <div className="pixel-status-badge">
+              REMEDIATION PROTOCOL: SUCCESS
+            </div>
+
+            <button
+              onClick={handleHome}
+              style={{
+                background: '#0a1128',
+                color: '#00f0ff',
+                border: '2px solid #00f0ff',
+                boxShadow: '2px 2px 0px #003366',
+                borderRadius: '0px',
+                padding: '4px 10px',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-arcade, monospace)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              title="Return to Homepage (Esc)"
+            >
+              <Home size={12} /> [ESC / HOME]
+            </button>
           </div>
 
           {/* Title banner */}
@@ -465,6 +519,25 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
               flexWrap: 'wrap',
             }}
           >
+            <button
+              className="btn-pixel-cyber"
+              onClick={handleHome}
+              style={{
+                border: '2px solid rgba(0, 240, 255, 0.4)',
+                boxShadow: '2px 2px 0px #003366',
+                borderRadius: '0px',
+                padding: '10px 18px',
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-arcade, monospace)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Home size={15} color="#00D9FF" /> &lt; BACK TO LOBBY
+            </button>
+
             {ticketData && (
               <button
                 className="btn-pixel-cyber"
