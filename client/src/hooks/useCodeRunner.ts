@@ -77,7 +77,12 @@ self.onmessage = function(e) {
 
     } else {
       var fn;
-      try { fn = new Function(data.code + '; return solution;')(); }
+      try {
+        var match = data.code.match(/function\s+([a-zA-Z0-9_$]+)\s*\(/) ||
+                    data.code.match(/(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?(?:function|\([^)]*\)\s*=>|[a-zA-Z0-9_$]+\s*=>)/);
+        var targetName = match ? match[1] : 'solution';
+        fn = new Function(data.code + '; return (typeof ' + targetName + ' === "function" ? ' + targetName + ' : (typeof solution === "function" ? solution : null));')();
+      }
       catch(err) {
         self.postMessage({ mode: 'test', success: false, results: [],
           error: err.message || 'Syntax Error' });
@@ -85,7 +90,7 @@ self.onmessage = function(e) {
       }
       if (typeof fn !== 'function') {
         self.postMessage({ mode: 'test', success: false, results: [],
-          error: "Entry point 'solution' function not found." });
+          error: "No executable function declaration found in submitted code." });
         return;
       }
       var results = [];
@@ -316,14 +321,9 @@ export function useCodeRunner() {
           }
           return {
             mode: 'test',
-            success: true,
-            results: testCases.map((tc, idx) => ({
-              testIndex: idx + 1,
-              passed: true,
-              expected: tc.expected,
-              actual: tc.expected,
-              executionTime: '0.12ms',
-            })),
+            success: false,
+            results: [],
+            error: `Client-side test execution requires JavaScript/TypeScript worker environment. Please click [Submit Fix] to verify your ${nonJs} solution against the server validation engine.`,
           };
         }
 

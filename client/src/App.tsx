@@ -20,6 +20,7 @@ import { VictoryModal } from '@/components/modals/VictoryModal';
 import { DefeatModal } from '@/components/modals/DefeatModal';
 import { HintModal } from '@/components/modals/HintModal';
 import { SurrenderModal } from '@/components/modals/SurrenderModal';
+import { EvaluationFailureModal } from '@/components/modals/EvaluationFailureModal';
 import { PlayerProfileModal } from '@/components/modals/PlayerProfileModal';
 import { TopicSelectorModal } from '@/components/modals/TopicSelectorModal';
 import { LeaderboardModal } from '@/components/modals/LeaderboardModal';
@@ -134,6 +135,7 @@ function App() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [easterEggActive, setEasterEggActive] = useState(false);
+  const [evalFailureOpen, setEvalFailureOpen] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<ChallengeStyle>('fix-the-code');
 
   const sessionScore = useScoreStore((s) => s.sessionScore);
@@ -400,18 +402,31 @@ function App() {
     play('click');
 
     try {
-      const review = await reviewCode(challenge.buggyCode, playerCode, challenge.id);
-      submitReview(review);
-      if (review.correct) {
+      const review = await reviewCode({
+        originalCode: challenge.buggyCode,
+        fixedCode: playerCode,
+        challengeId: challenge.id,
+        language: (challenge as any).language || selectedLanguage,
+        challengeStyle: (challenge as any).challengeStyle || selectedStyle,
+        testCases: challenge.testCases,
+        correctCode: (challenge as any).correctCode,
+        correctOptionId: (challenge as any).correctOptionId,
+        expectedOutput: (challenge as any).expectedOutput,
+        bugDescription: (challenge as any).bugDescription,
+      });
+      const isCorrect = !!(review.isCorrect ?? review.correct);
+      submitReview({ ...review, correct: isCorrect, isCorrect });
+      if (isCorrect) {
         const netDelta = useGameStore.getState().lastScoreBreakdown?.finalScore || challenge.points || 100;
         await useScoreStore.getState().recordBountyVictory(netDelta);
       }
-      play(review.correct ? 'correct' : 'wrong');
-      if (review.correct && useGameStore.getState().combo > 1) {
+      play(isCorrect ? 'correct' : 'wrong');
+      if (isCorrect && useGameStore.getState().combo > 1) {
         setTimeout(() => play('combo'), 300);
       }
-      if (!review.correct) {
+      if (!isCorrect) {
         triggerScreenShake();
+        setEvalFailureOpen(true);
       }
     } catch (err: unknown) {
       const appErr = toAppError(err, 'Automated code review service failed.');
@@ -1492,6 +1507,12 @@ function App() {
       {/* ── Modal Dialog Portals Subtree ──────────────────────────────────── */}
       <ErrorBoundary componentName="ModalSubsystem">
         <VictoryModal onNextChallenge={handleNewChallenge} />
+        <EvaluationFailureModal
+          open={evalFailureOpen}
+          onClose={() => setEvalFailureOpen(false)}
+          onNextChallenge={() => { setEvalFailureOpen(false); handleNewChallenge(); }}
+          onSurrender={() => { setEvalFailureOpen(false); setSurrenderOpen(true); }}
+        />
         <DefeatModal onNextChallenge={handleNewChallenge} />
         <HintModal open={hintOpen} onClose={() => setHintOpen(false)} />
         <SurrenderModal open={surrenderOpen} onClose={() => setSurrenderOpen(false)} />

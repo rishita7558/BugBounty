@@ -28,6 +28,11 @@ import type { SupportedLanguage } from '@/core/taxonomy/challengeTaxonomy';
 /**
  * Challenge specification schema.
  */
+export interface ChallengeOption {
+  id: string;
+  text: string;
+}
+
 export interface Challenge {
   id: string;
   title: string;
@@ -40,10 +45,13 @@ export interface Challenge {
   fingerprint?: string;
   buggyCode: string;
   correctCode: string;
-  bugLine: number;
+  bugLine?: number;
   bugDescription: string;
   hints: string[];
   testCases: { input: string; expectedOutput: string }[];
+  options?: ChallengeOption[];
+  correctOptionId?: string;
+  expectedOutput?: string;
   timeLimit: number;
   points: number;
 }
@@ -52,11 +60,20 @@ export interface Challenge {
  * Code evaluation review result delivered from automated review services.
  */
 export interface GameReview {
+  success?: boolean;
   correct: boolean;
+  isCorrect?: boolean;
+  status?: 'correct' | 'incorrect' | 'error';
   score: number;
+  message?: string;
   feedback: string;
   suggestions: string[];
   comboBonus: boolean;
+  passedTests?: number;
+  totalTests?: number;
+  correctAnswer?: string;
+  explanation?: string;
+  errorDetails?: string;
   scoreBreakdown?: ScoreBreakdown;
 }
 
@@ -437,7 +454,9 @@ export const useGameStore = create<GameState>()(
         actionError: null,
       });
 
-      if (review.correct) {
+      const resolvedCorrect = !!(review.isCorrect ?? review.correct);
+
+      if (resolvedCorrect) {
         // 1. Update streak via calendar-day math
         const updatedStreak = StreakManager.updateStreakOnSolve(
           streakRecord,

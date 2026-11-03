@@ -106,13 +106,22 @@ export async function queryLLM(systemPrompt: string, userPrompt: string): Promis
     }
   }
 
-  if (systemPrompt.includes('code review') || userPrompt.includes('Evaluate the fix')) {
+  if (
+    systemPrompt.includes('code review') ||
+    userPrompt.includes('Evaluate the fix') ||
+    systemPrompt.includes('code evaluation engine')
+  ) {
+    // When LLM is offline or unconfigured, do NOT fake a successful review!
     return {
-      correct: true,
-      score: 95,
-      feedback: 'Excellent work! The vulnerability has been resolved cleanly with proper validation.',
-      suggestions: ['Consider adding unit tests for edge cases.'],
-      comboBonus: true,
+      isCorrect: false,
+      correct: false,
+      passedTests: 0,
+      totalTests: 1,
+      score: 0,
+      message: 'Automated evaluation service is operating offline. Falling back to deterministic sandbox verification.',
+      explanation: 'No LLM connection available for semantic review.',
+      suggestions: ['Ensure code passes deterministic test assertions.'],
+      comboBonus: false,
     };
   }
 

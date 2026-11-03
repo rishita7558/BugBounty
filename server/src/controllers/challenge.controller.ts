@@ -1,16 +1,17 @@
 /**
  * @file challenge.controller.ts
  * @description Controller handling challenge generation and submission evaluation requests.
- * Formulates system prompts, handles question rotation with excludeIds, and routes payloads to the LLM service.
+ * Formulates system prompts, handles question rotation with excludeIds, and routes payloads
+ * to the rigorous evaluator service for zero-false-positive validation.
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { queryLLM } from '../services/llm.service.js';
 import {
   recordQuestion,
   getRecentExclusionContext,
 } from '../services/questionHistoryService.js';
 import { generateDynamicChallenge } from '../services/llmQuestionGenerator.js';
+import { evaluateSubmission, type EvaluationPayload } from '../services/evaluatorService.js';
 
 /**
  * Express handler to generate a new debugging challenge with topic selection,
@@ -71,7 +72,7 @@ export async function generateChallenge(req: Request, res: Response, next: NextF
     const pointsMap = { NOVICE: 100, VETERAN: 250, CYBER_PUNK: 500 };
     const timeLimitMap = { NOVICE: 120, VETERAN: 150, CYBER_PUNK: 180 };
 
-    const challenge = {
+    const challenge: any = {
       id: dynamicChallenge.id,
       title: dynamicChallenge.title,
       description: dynamicChallenge.bugDescription,
@@ -93,6 +94,35 @@ export async function generateChallenge(req: Request, res: Response, next: NextF
       fingerprint: dynamicChallenge.fingerprint,
     };
 
+    // If challengeStyle is multiple-choice, build options
+    if (challengeStyle === 'multiple-choice') {
+      const correctText = dynamicChallenge.bugDescription;
+      const distractors = [
+        'Variable scope is leaked across asynchronous macro-task queues',
+        'Missing mutual exclusion lock causing concurrent mutation hazard',
+        'Null pointer dereference under edge boundary conditions',
+        'Implicit type coercion producing NaN during arithmetic operations',
+        'Off-by-one boundary traversal causing out-of-bounds slice indexing',
+      ].filter((d) => d !== correctText);
+
+      const allOptions = [
+        { text: correctText, isCorrect: true },
+        { text: distractors[0], isCorrect: false },
+        { text: distractors[1], isCorrect: false },
+        { text: distractors[2], isCorrect: false },
+      ].sort(() => Math.random() - 0.5);
+
+      const letters = ['A', 'B', 'C', 'D'];
+      challenge.options = allOptions.map((opt, i) => ({
+        id: letters[i],
+        text: opt.text,
+      }));
+      const correctIdx = allOptions.findIndex((o) => o.isCorrect);
+      challenge.correctOptionId = letters[correctIdx];
+    } else if (challengeStyle === 'predict-the-output' || challengeStyle === 'predict-output') {
+      challenge.expectedOutput = dynamicChallenge.testCases[0]?.expectedOutput || 'undefined';
+    }
+
     // Prevent ID collisions with excluded challenges
     if (excludeIds.includes(challenge.id)) {
       challenge.id = `${challenge.id}-${Math.random().toString(36).substring(2, 6)}`;
@@ -108,47 +138,50 @@ export async function generateChallenge(req: Request, res: Response, next: NextF
 }
 
 /**
- * Express handler to evaluate a submitted player solution against the original buggy code.
+ * Express handler to evaluate a submitted player solution with zero false positives.
+ * Evaluates code in an isolated node:vm sandbox, handles syntax/runtime/timeout errors,
+ * verifies test assertions, and deterministically evaluates MCQ/prediction answers.
  *
- * @param req Request containing originalCode, fixedCode, and challengeId in the body.
+ * @param req Request containing submission payload in the body.
  * @param res Response delivering the evaluation review result.
  * @param next Express error forwarding function.
  */
 export async function reviewCode(req: Request, res: Response, next: NextFunction) {
   try {
-    const { originalCode, fixedCode, challengeId } = req.body as {
-      originalCode: string;
-      fixedCode: string;
-      challengeId: string;
+    const body = req.body as EvaluationPayload & {
+      buggyCode?: string;
+      playerCode?: string;
     };
 
-    const reviewPrompt = `You are a code review engine for an arcade debugging arena. Compare the buggy code with the player's fix.
+    const evaluationPayload: EvaluationPayload = {
+      challengeId: body.challengeId,
+      originalCode: body.originalCode || body.buggyCode || '',
+      fixedCode: body.fixedCode || body.playerCode || '',
+      language: body.language,
+      challengeStyle: body.challengeStyle,
+      selectedOptionId: body.selectedOptionId,
+      userAnswer: body.userAnswer,
+      testCases: body.testCases,
+      correctCode: body.correctCode,
+      correctOptionId: body.correctOptionId,
+      expectedOutput: body.expectedOutput,
+      bugDescription: body.bugDescription,
+    };
 
-Return ONLY valid JSON:
-{
-  "correct": <boolean>,
-  "score": <0-100>,
-  "feedback": "Explanation of what the player did right/wrong",
-  "suggestions": ["improvement suggestions"],
-  "comboBonus": <boolean — true if fix is elegant>
-}`;
+    const review = await evaluateSubmission(evaluationPayload);
 
-    const userPrompt = `Challenge ID: ${challengeId}
-    
-Original buggy code:
-\`\`\`
-${originalCode}
-\`\`\`
-
-Player's submitted fix:
-\`\`\`
-${fixedCode}
-\`\`\`
-
-Evaluate the fix.`;
-
-    const review = await queryLLM(reviewPrompt, userPrompt);
-    res.json({ success: true, review });
+    res.json({
+      success: true,
+      review,
+      isCorrect: review.isCorrect,
+      correct: review.correct,
+      status: review.status,
+      message: review.message,
+      passedTests: review.passedTests,
+      totalTests: review.totalTests,
+      correctAnswer: review.correctAnswer,
+      explanation: review.explanation,
+    });
   } catch (err) {
     next(err);
   }
