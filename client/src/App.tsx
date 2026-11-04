@@ -30,12 +30,8 @@ import { useScoreStore } from '@/store/useScoreStore';
 import { getLanguageMeta, getTopicById } from '@/core/taxonomy/challengeTaxonomy';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { toAppError } from '@/core/errors/AppErrors';
-import {
-  decodeChallengeFromUrl,
-  encodeChallengeToUrl,
-  type ShareableChallengePayload,
-} from '@/lib/lzShare';
-import { getPlayerProfile, recordClientQuestion, getClientQuestionExclusions } from '@/lib/db';
+import { decodeChallengeFromUrl } from '@/lib/lzShare';
+import { recordClientQuestion, getClientQuestionExclusions } from '@/lib/db';
 
 export type ChallengeStyle =
   | 'find-the-bug'
@@ -71,11 +67,9 @@ import {
   Flag,
   AlertCircle,
   X,
-  Share2,
   User,
   Trophy,
   Layers,
-  Check,
   Shield,
   Cpu,
   Sparkles,
@@ -133,7 +127,6 @@ function App() {
   const [consoleOutput, setConsoleOutput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [shareToast, setShareToast] = useState<string | null>(null);
   const [easterEggActive, setEasterEggActive] = useState(false);
   const [evalFailureOpen, setEvalFailureOpen] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<ChallengeStyle>('fix-the-code');
@@ -446,38 +439,6 @@ function App() {
     triggerScreenShake,
   ]);
 
-  /**
-   * Serializes current challenge state to a compressed URL hash for serverless sharing.
-   */
-  const handleShareChallenge = useCallback(async () => {
-    if (!challenge) return;
-    play('click');
-    const profile = await getPlayerProfile();
-    const payload: ShareableChallengePayload = {
-      title: challenge.title,
-      code: playerCode,
-      difficulty: challenge.difficulty,
-      description: challenge.description,
-      bugLine: challenge.bugLine,
-      hints: challenge.hints,
-      tests: challenge.testCases.map((tc) => ({
-        input: [tc.input],
-        expected: tc.expectedOutput,
-      })),
-      author: profile.callsign,
-    };
-
-    const url = encodeChallengeToUrl(payload);
-    try {
-      await navigator.clipboard.writeText(url);
-      setShareToast('Challenge URL copied to clipboard!');
-      setTimeout(() => setShareToast(null), 4000);
-    } catch {
-      setShareToast('Failed to copy link. Check clipboard permissions.');
-      setTimeout(() => setShareToast(null), 4000);
-    }
-  }, [challenge, playerCode, play]);
-
   return (
     <div
       className={screenShake ? 'animate-screen-shake' : ''}
@@ -779,40 +740,6 @@ function App() {
               }}
             >
               <X size={16} />
-            </button>
-          </div>
-        )}
-
-        {/* Share Feedback Toast */}
-        {shareToast && (
-          <div
-            className="pixel-box animate-score-pop"
-            style={{
-              padding: '12px 18px',
-              border: '1px solid #00D9FF',
-              background: 'rgba(0, 217, 255, 0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              color: '#00D9FF',
-              fontSize: '0.8rem',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Check size={16} />
-              <span>{shareToast}</span>
-            </div>
-            <button
-              onClick={() => setShareToast(null)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#00D9FF',
-                cursor: 'pointer',
-              }}
-            >
-              <X size={14} />
             </button>
           </div>
         )}
@@ -1286,18 +1213,6 @@ function App() {
                       </span>
                       to submit code fix from editor
                     </div>
-
-                    <button
-                      onClick={handleShareChallenge}
-                      className="btn-pixel-cyber"
-                      style={{
-                        padding: '4px 10px',
-                        fontSize: '0.7rem',
-                      }}
-                      title="Copy compressed challenge link to clipboard"
-                    >
-                      <Share2 size={12} color="#00D9FF" /> Share URL
-                    </button>
                   </div>
                 </div>
               </ErrorBoundary>
