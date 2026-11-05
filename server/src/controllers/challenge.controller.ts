@@ -23,6 +23,22 @@ import { evaluateSubmission, type EvaluationPayload } from '../services/evaluato
  */
 export async function generateChallenge(req: Request, res: Response, next: NextFunction) {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ success: false, error: 'Request body must be a valid JSON object.' });
+    }
+
+    if (req.body.language !== undefined && typeof req.body.language !== 'string') {
+      return res.status(400).json({ success: false, error: 'Field "language" must be a string.' });
+    }
+
+    if (req.body.topic !== undefined && typeof req.body.topic !== 'string') {
+      return res.status(400).json({ success: false, error: 'Field "topic" must be a string.' });
+    }
+
+    if (req.body.mode !== undefined && !['dsa', 'practical'].includes(req.body.mode)) {
+      return res.status(400).json({ success: false, error: 'Field "mode" must be "dsa" or "practical".' });
+    }
+
     const {
       difficulty = 'medium',
       category,
@@ -92,6 +108,7 @@ export async function generateChallenge(req: Request, res: Response, next: NextF
       timeLimit: timeLimitMap[dynamicChallenge.difficulty],
       points: pointsMap[dynamicChallenge.difficulty],
       fingerprint: dynamicChallenge.fingerprint,
+      source: dynamicChallenge.source || 'llm',
     };
 
     // If challengeStyle is multiple-choice, build options
@@ -148,6 +165,10 @@ export async function generateChallenge(req: Request, res: Response, next: NextF
  */
 export async function reviewCode(req: Request, res: Response, next: NextFunction) {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ success: false, error: 'Request body must be a valid JSON object.' });
+    }
+
     const body = req.body as EvaluationPayload & {
       buggyCode?: string;
       playerCode?: string;
@@ -179,6 +200,7 @@ export async function reviewCode(req: Request, res: Response, next: NextFunction
       message: review.message,
       passedTests: review.passedTests,
       totalTests: review.totalTests,
+      testDetails: review.testDetails,
       correctAnswer: review.correctAnswer,
       explanation: review.explanation,
     });

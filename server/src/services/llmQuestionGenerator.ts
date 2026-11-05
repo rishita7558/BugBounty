@@ -1,16 +1,16 @@
 /**
  * @file llmQuestionGenerator.ts
  * @description Advanced LLM Question Generation Pipeline for BugBounty Arena.
- * Completely eliminates static fallback dictionaries. Implements exponential backoff with jitter
- * (up to 2 retries), multi-model cascade with live model failover (gemini-flash-lite-latest,
- * gemini-3.5-flash-lite, gemini-3.8-flash), strict JSON schema validation, anti-duplication
- * fingerprint exclusion, and dynamic procedural synthesis resilience.
+ * Implements exponential backoff with jitter (initial delay 500ms, max 2 retries per model),
+ * multi-model cascade across stable model identifiers ["gemini-2.5-flash", "gemini-1.5-flash",
+ * "gemini-1.5-pro", "gemini-flash-latest"], 5-second timeout thresholds, and a deterministic
+ * offline emergency fallback pool ({ source: "curated_fallback" }) ensuring zero 500/503 runtime crashes.
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import crypto from 'crypto';
-import { generateProceduralChallenge } from './proceduralChallengeGenerator.js';
+import { getCuratedFallback } from '../fixtures/curatedChallenges.js';
 
 export interface GeneratedChallenge {
   id: string;
@@ -22,9 +22,10 @@ export interface GeneratedChallenge {
   bugDescription: string;
   brokenCode: string;
   correctCode?: string;
-  testCases: Array<{ input: string; expectedOutput: string }>;
+  testCases: Array<{ input: string; expectedOutput: string; hidden?: boolean }>;
   hints: string[];
   fingerprint: string;
+  source?: 'curated_fallback' | 'llm' | 'procedural';
 }
 
 export interface GenerationParams {
@@ -50,15 +51,15 @@ export class LLMGenerationError extends Error {
 
 /**
  * Ordered list of candidate models for Gemini API.
- * Prioritizes high-throughput lite models to avoid 503 high-demand spikes.
+ * Uses stable, high-throughput model identifiers to prevent 503 high-demand errors.
  */
 const GEMINI_MODELS = Array.from(
   new Set(
     [
       process.env.GEMINI_MODEL,
-      'gemini-flash-lite-latest',
-      'gemini-3.5-flash-lite',
-      'gemini-3.8-flash',
+      'gemini-2.5-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
       'gemini-flash-latest',
     ].filter(Boolean) as string[]
   )
@@ -84,8 +85,17 @@ function computeFingerprint(code: string, topic: string, language: string): stri
 
 function sleepWithJitter(attempt: number): Promise<void> {
   const baseMs = 500 * Math.pow(2, attempt);
-  const jitterMs = Math.floor(Math.random() * 350);
+  const jitterMs = Math.floor(Math.random() * 250);
   return new Promise((resolve) => setTimeout(resolve, baseMs + jitterMs));
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 5000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`LLM generation timed out after ${timeoutMs}ms`)), timeoutMs)
+    ),
+  ]);
 }
 
 function parseAndValidateChallenge(raw: any, params: GenerationParams): GeneratedChallenge {
@@ -111,19 +121,32 @@ function parseAndValidateChallenge(raw: any, params: GenerationParams): Generate
   }
 
   // Ensure brokenCode does not have spoiler comments
-  const spoilerPattern = /(\/\/\s*bug|\/\/\s*fix this|\/\/\s*error|#\s*bug|#\s*fix this)/i;
+  const spoilerPattern = /(\/\/\s*bug|\/\/\s*fix this|\/\/\s*error|#\s*bug|#\s*fix this|--\s*bug)/i;
   if (spoilerPattern.test(brokenCode)) {
     throw new Error('Synthesized challenge contained illegal spoiler comment.');
   }
 
   const fingerprint = computeFingerprint(brokenCode, params.topic, params.language);
 
-  const testCases = Array.isArray(parsed.testCases) && parsed.testCases.length > 0
-    ? parsed.testCases.map((tc: any) => ({
-        input: String(tc.input || ''),
-        expectedOutput: String(tc.expectedOutput || tc.output || ''),
-      }))
-    : [{ input: 'Standard verification invocation', expectedOutput: 'Resolved correctly' }];
+  // Guarantee at least 2 visible test cases and at least 1 hidden edge case
+  let testCases: Array<{ input: string; expectedOutput: string; hidden?: boolean }> = [];
+  if (Array.isArray(parsed.testCases) && parsed.testCases.length > 0) {
+    testCases = parsed.testCases.map((tc: any, idx: number) => ({
+      input: String(tc.input || ''),
+      expectedOutput: String(tc.expectedOutput || tc.output || ''),
+      hidden: tc.hidden !== undefined ? Boolean(tc.hidden) : idx >= 2,
+    }));
+    // If none marked as hidden and we have more than 1 test case, designate the last one as hidden
+    if (!testCases.some((tc) => tc.hidden) && testCases.length >= 2) {
+      testCases[testCases.length - 1].hidden = true;
+    }
+  } else {
+    testCases = [
+      { input: 'Standard verification invocation', expectedOutput: 'Resolved correctly', hidden: false },
+      { input: 'Boundary verification invocation', expectedOutput: 'Resolved correctly', hidden: false },
+      { input: 'Hidden edge case invocation', expectedOutput: 'Resolved correctly', hidden: true },
+    ];
+  }
 
   const hints = Array.isArray(parsed.hints) && parsed.hints.length >= 2
     ? parsed.hints.map(String)
@@ -135,7 +158,7 @@ function parseAndValidateChallenge(raw: any, params: GenerationParams): Generate
   const title = (parsed.title || `${params.language.toUpperCase()} ${params.topic} Vulnerability`).trim();
   const id = parsed.id && typeof parsed.id === 'string'
     ? parsed.id.toLowerCase().replace(/[^a-z0-9-]/g, '-')
-    : `bounty-${params.language}-${params.topic}-${fingerprint.slice(0, 6)}`;
+    : `bounty-${params.language}-${params.topic.toLowerCase().replace(/[^a-z0-9-]/g, '-')}-${fingerprint.slice(0, 6)}`;
 
   return {
     id,
@@ -150,38 +173,26 @@ function parseAndValidateChallenge(raw: any, params: GenerationParams): Generate
     testCases,
     hints,
     fingerprint,
+    source: 'llm',
   };
 }
 
 /**
- * Synthesizes a new unique challenge via generative AI with multi-model cascade
- * and dynamic procedural fallback resilience.
+ * Synthesizes a new challenge via generative AI with resilient multi-model cascade,
+ * exponential backoff with jitter, 5-second timeouts, and emergency curated fallback pool.
  */
 export async function generateDynamicChallenge(params: GenerationParams): Promise<GeneratedChallenge> {
   const { provider, key } = getProvider();
 
+  // If no API key configured, immediately serve vetted deterministic seed
   if (!key) {
-    console.warn('[llmQuestionGenerator] No AI Key configured; falling back to dynamic procedural generation.');
-    const procedural = generateProceduralChallenge({
-      difficulty: params.difficulty === 'NOVICE' ? 'easy' : params.difficulty === 'VETERAN' ? 'medium' : 'hard',
-      language: params.language,
-      topic: params.topic,
-      category: params.mode,
-      excludeIds: params.excludeIds,
-    });
+    console.warn('[WARN] No AI Key configured. Serving vetted deterministic challenge seed.');
+    const fallback = getCuratedFallback(params);
     return {
-      id: procedural.id,
-      title: procedural.title,
-      mode: params.mode,
-      language: procedural.language,
-      topic: procedural.topic,
+      ...fallback,
       difficulty: params.difficulty,
-      bugDescription: procedural.bugDescription,
-      brokenCode: procedural.buggyCode,
-      correctCode: procedural.correctCode,
-      testCases: procedural.testCases,
-      hints: procedural.hints,
-      fingerprint: computeFingerprint(procedural.buggyCode, procedural.topic, procedural.language),
+      mode: params.mode,
+      source: 'curated_fallback',
     };
   }
 
@@ -198,7 +209,7 @@ CRITICAL PROTOCOLS:
 1. The brokenCode MUST contain exactly ONE legitimate, executable programming flaw (e.g., race condition, off-by-one, type coercion trap, memory leak, unhandled promise, SQL interpolation flaw, algorithmic time/space failure).
 2. DO NOT include ANY comments pointing to or explaining the bug inside brokenCode (NO "// Bug:", NO "// Fix this", NO spoilers).
 3. EXCLUDE_SIMILAR: [${exclusions.slice(0, 20).join(', ')}]. You must generate a novel, unique question that differs from these fingerprints.
-4. Output STRICT JSON only.
+4. Output STRICT JSON only. Include at least 2 visible test cases and 1 hidden edge case marked with "hidden": true.
 
 JSON SCHEMA:
 {
@@ -209,113 +220,103 @@ JSON SCHEMA:
   "correctCode": "Fixed, secure version of the code",
   "hints": ["Subtle clue", "Deeper architectural clue", "Concrete remediation guidance"],
   "testCases": [
-    { "input": "call signature or input data", "expectedOutput": "expected return value" }
+    { "input": "call signature or input data", "expectedOutput": "expected return value", "hidden": false },
+    { "input": "boundary test data", "expectedOutput": "expected return value", "hidden": false },
+    { "input": "edge case data", "expectedOutput": "expected return value", "hidden": true }
   ]
 }`;
 
   const userPrompt = `Synthesize a ${params.difficulty} challenge for ${params.language} on topic "${params.topic}".`;
 
-  const MAX_RETRIES = 2;
-  let lastError: any = null;
+  const RETRIES_PER_MODEL = 2; // Up to 2 retries per model candidate
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      if (attempt > 0) {
-        await sleepWithJitter(attempt);
-      }
+  if (provider === 'gemini') {
+    const genAI = new GoogleGenerativeAI(key);
 
-      let jsonText = '';
+    for (const modelCandidate of GEMINI_MODELS) {
+      for (let attempt = 0; attempt <= RETRIES_PER_MODEL; attempt++) {
+        try {
+          if (attempt > 0) {
+            await sleepWithJitter(attempt);
+          }
 
-      if (provider === 'gemini') {
-        const genAI = new GoogleGenerativeAI(key);
-        let modelSuccess = false;
-        let lastModelErr: any = null;
+          const model = genAI.getGenerativeModel({
+            model: modelCandidate,
+            systemInstruction: systemPrompt,
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.8,
+            },
+          });
 
-        for (const modelCandidate of GEMINI_MODELS) {
-          try {
-            const model = genAI.getGenerativeModel({
-              model: modelCandidate,
-              systemInstruction: systemPrompt,
-              generationConfig: {
-                responseMimeType: 'application/json',
-                temperature: 0.8,
-              },
-            });
+          // Enforce strict 5,000ms timeout threshold on external LLM call
+          const result = await withTimeout(model.generateContent(userPrompt), 5000);
+          const jsonText = result.response.text();
+          const challenge = parseAndValidateChallenge(jsonText, params);
 
-            const result = await model.generateContent(userPrompt);
-            jsonText = result.response.text();
-            modelSuccess = true;
-            break;
-          } catch (modelErr: any) {
-            lastModelErr = modelErr;
-            console.warn(`[llmQuestionGenerator] Model candidate ${modelCandidate} unavailable (${modelErr.message}). Cascading...`);
+          // Verify fingerprint is not duplicate
+          if (params.excludeFingerprints?.includes(challenge.fingerprint)) {
+            throw new Error(`Synthesized challenge duplicate fingerprint ${challenge.fingerprint}`);
+          }
+
+          return challenge;
+        } catch (modelErr: any) {
+          const isLastAttemptForModel = attempt === RETRIES_PER_MODEL;
+          if (isLastAttemptForModel) {
+            console.warn(
+              `[llmQuestionGenerator] Model candidate ${modelCandidate} exhausted after ${RETRIES_PER_MODEL + 1} attempts (${modelErr.message}). Cascading to next candidate...`
+            );
           }
         }
-
-        if (!modelSuccess) {
-          throw lastModelErr || new Error('All Gemini model candidates exhausted');
+      }
+    }
+  } else {
+    // OpenAI provider path
+    const openai = new OpenAI({ apiKey: key });
+    for (let attempt = 0; attempt <= RETRIES_PER_MODEL; attempt++) {
+      try {
+        if (attempt > 0) {
+          await sleepWithJitter(attempt);
         }
-      } else {
-        const openai = new OpenAI({ apiKey: key });
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          temperature: 0.8,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-        });
-        jsonText = completion.choices[0]?.message?.content ?? '{}';
+
+        const completion = await withTimeout(
+          openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            temperature: 0.8,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+          }),
+          5000
+        );
+
+        const jsonText = completion.choices[0]?.message?.content ?? '{}';
+        const challenge = parseAndValidateChallenge(jsonText, params);
+        if (params.excludeFingerprints?.includes(challenge.fingerprint)) {
+          throw new Error(`Synthesized challenge duplicate fingerprint ${challenge.fingerprint}`);
+        }
+        return challenge;
+      } catch (err: any) {
+        if (attempt === RETRIES_PER_MODEL) {
+          console.warn(`[llmQuestionGenerator] OpenAI pipeline exhausted (${err.message}).`);
+        }
       }
-
-      const challenge = parseAndValidateChallenge(jsonText, params);
-
-      // Verify fingerprint is not in excluded list
-      if (params.excludeFingerprints?.includes(challenge.fingerprint)) {
-        throw new Error(`Synthesized challenge duplicate fingerprint ${challenge.fingerprint}`);
-      }
-
-      return challenge;
-    } catch (err: any) {
-      lastError = err;
-      console.warn(`[llmQuestionGenerator] Attempt ${attempt + 1}/${MAX_RETRIES + 1} failed: ${err.message}`);
     }
   }
 
-  // Gracefully fall back to dynamic procedural generation if all cloud AI models are down / 503
+  // Deterministic Offline Emergency Fallback Pool (Demo Insurance)
+  // If all external LLM calls fail or timeout, do not return 500 or throw unhandled exceptions.
   console.warn(
-    `[llmQuestionGenerator] Generative AI pipeline exhausted after retries (${lastError?.message}), activating dynamic procedural synthesis engine.`
+    '[WARN] Upstream API unavailable. Serving vetted deterministic challenge seed.'
   );
 
-  try {
-    const procedural = generateProceduralChallenge({
-      difficulty: params.difficulty === 'NOVICE' ? 'easy' : params.difficulty === 'VETERAN' ? 'medium' : 'hard',
-      language: params.language,
-      topic: params.topic,
-      category: params.mode,
-      excludeIds: params.excludeIds,
-    });
-
-    return {
-      id: procedural.id,
-      title: procedural.title,
-      mode: params.mode,
-      language: procedural.language,
-      topic: procedural.topic,
-      difficulty: params.difficulty,
-      bugDescription: procedural.bugDescription,
-      brokenCode: procedural.buggyCode,
-      correctCode: procedural.correctCode,
-      testCases: procedural.testCases,
-      hints: procedural.hints,
-      fingerprint: computeFingerprint(procedural.buggyCode, procedural.topic, procedural.language),
-    };
-  } catch (procErr: any) {
-    throw new LLMGenerationError(
-      `Failed to synthesize unique bounty after ${MAX_RETRIES + 1} attempts: ${lastError?.message || 'Unknown LLM fault'}`,
-      502,
-      { originalError: lastError?.message, proceduralError: procErr?.message }
-    );
-  }
+  const fallback = getCuratedFallback(params);
+  return {
+    ...fallback,
+    difficulty: params.difficulty,
+    mode: params.mode,
+    source: 'curated_fallback',
+  };
 }

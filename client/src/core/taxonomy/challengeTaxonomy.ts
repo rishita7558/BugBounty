@@ -1,3 +1,4 @@
+import { DSA_TOPICS_BY_LANGUAGE } from '@/config/taxonomy';
 /**
  * @file challengeTaxonomy.ts
  * @description Comprehensive language and vulnerability domain taxonomy for BugBounty.
@@ -150,7 +151,7 @@ export const LANGUAGE_METADATA: Record<SupportedLanguage, LanguageMeta> = {
 /**
  * Complete catalog of challenge topics indexed by language.
  */
-export const CHALLENGE_TAXONOMY: Record<SupportedLanguage, ChallengeTopic[]> = {
+const BASE_TAXONOMY: Record<SupportedLanguage, ChallengeTopic[]> = {
   javascript: [
     {
       id: 'js-async-event-loop',
@@ -1031,6 +1032,60 @@ export const CHALLENGE_TAXONOMY: Record<SupportedLanguage, ChallengeTopic[]> = {
       ],
     },
   ],
+};
+
+export { DSA_TOPICS_BY_LANGUAGE };
+
+function slugifyTopic(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+export function generateDsaTopicsForLanguage(lang: SupportedLanguage): ChallengeTopic[] {
+  const titles = DSA_TOPICS_BY_LANGUAGE[lang] || [];
+  const diffs: ChallengeDifficulty[] = ['easy', 'medium', 'hard'];
+
+  return titles.map((title, i) => ({
+    id: `${lang}-dsa-${slugifyTopic(title)}`,
+    name: title,
+    language: lang,
+    difficulty: diffs[i % diffs.length],
+    category: 'dsa' as const,
+    description: `Algorithmic analysis, boundary conditions, and invariant enforcement for ${title}.`,
+    badge: 'DSA',
+    tags: ['dsa', 'algorithm', lang, ...slugifyTopic(title).split('-').slice(0, 3)],
+    commonBugs: [
+      `Off-by-one boundary index in ${title}`,
+      `Unchecked edge cases or pointer exceptions in ${title}`,
+      `Inefficient time/space complexity under high-volume test vectors`,
+    ],
+  }));
+}
+
+function mergeWithDsa(baseTopics: ChallengeTopic[], dsaTopics: ChallengeTopic[]): ChallengeTopic[] {
+  const map = new Map<string, ChallengeTopic>();
+  for (const t of baseTopics) {
+    map.set(t.id, t);
+  }
+  for (const t of dsaTopics) {
+    if (!map.has(t.id)) {
+      map.set(t.id, t);
+    }
+  }
+  return Array.from(map.values());
+}
+
+export const CHALLENGE_TAXONOMY: Record<SupportedLanguage, ChallengeTopic[]> = {
+  javascript: mergeWithDsa(BASE_TAXONOMY.javascript || [], generateDsaTopicsForLanguage('javascript')),
+  typescript: mergeWithDsa(BASE_TAXONOMY.typescript || [], generateDsaTopicsForLanguage('typescript')),
+  python: mergeWithDsa(BASE_TAXONOMY.python || [], generateDsaTopicsForLanguage('python')),
+  rust: mergeWithDsa(BASE_TAXONOMY.rust || [], generateDsaTopicsForLanguage('rust')),
+  go: mergeWithDsa(BASE_TAXONOMY.go || [], generateDsaTopicsForLanguage('go')),
+  cpp: mergeWithDsa(BASE_TAXONOMY.cpp || [], generateDsaTopicsForLanguage('cpp')),
+  java: mergeWithDsa(BASE_TAXONOMY.java || [], generateDsaTopicsForLanguage('java')),
+  sql: mergeWithDsa(BASE_TAXONOMY.sql || [], generateDsaTopicsForLanguage('sql')),
 };
 
 /**

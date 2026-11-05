@@ -20,6 +20,7 @@ import { queryLLM } from './llm.service.js';
 export interface TestCaseItem {
   input: string;
   expectedOutput: string;
+  hidden?: boolean;
 }
 
 export interface EvaluationPayload {
@@ -44,6 +45,7 @@ export interface TestDetail {
   expected: string;
   actual: string;
   error?: string;
+  hidden?: boolean;
 }
 
 export interface EvaluationResponse {
@@ -513,21 +515,27 @@ export function evaluateInVm(
 
       if (passed) passedCount++;
 
+      const isHidden = Boolean(tc.hidden);
       details.push({
         testIndex: i + 1,
         passed,
-        input: tc.input,
-        expected: tc.expectedOutput,
-        actual: typeof actualResult === 'object' ? JSON.stringify(actualResult) : String(actualResult),
+        input: isHidden ? '[HIDDEN_EDGE_CASE]' : tc.input,
+        expected: isHidden ? '[HIDDEN_EDGE_CASE]' : tc.expectedOutput,
+        actual: isHidden
+          ? (passed ? '[PASSED]' : '[FAILED]')
+          : (typeof actualResult === 'object' ? JSON.stringify(actualResult) : String(actualResult)),
+        hidden: isHidden,
       });
     } catch (err: any) {
+      const isHidden = Boolean(tc.hidden);
       details.push({
         testIndex: i + 1,
         passed: false,
-        input: tc.input,
-        expected: tc.expectedOutput,
+        input: isHidden ? '[HIDDEN_EDGE_CASE]' : tc.input,
+        expected: isHidden ? '[HIDDEN_EDGE_CASE]' : tc.expectedOutput,
         actual: 'RUNTIME_ERROR',
-        error: err.message || String(err),
+        error: isHidden ? 'Hidden edge case execution error' : (err.message || String(err)),
+        hidden: isHidden,
       });
     }
   }
@@ -932,9 +940,19 @@ export async function evaluateSubmission(payload: EvaluationPayload): Promise<Ev
 
     const failedCount = vmResult.totalTests - vmResult.passedTests;
     const firstFailure = vmResult.details.find((d) => !d.passed);
-    const failDetail = firstFailure
-      ? `Test #${firstFailure.testIndex} failed. Input: (${firstFailure.input}), Expected: ${firstFailure.expected}, Got: ${firstFailure.actual}`
-      : `${failedCount} test case(s) failed.`;
+    const isHiddenFailure = Boolean(firstFailure?.hidden);
+
+    const failDetail = isHiddenFailure
+      ? 'Failed on hidden edge case verification.'
+      : firstFailure
+      ? `Failed Test ${firstFailure.testIndex}/${vmResult.totalTests}\nInput: [${firstFailure.input}]\nExpected: [${firstFailure.expected}]\nActual: [${firstFailure.actual}]`
+      : `${failedCount} of ${vmResult.totalTests} test cases failed.`;
+
+    const failureMessage = isHiddenFailure
+      ? 'Failed on hidden edge case verification.'
+      : firstFailure
+      ? `Failed Test ${firstFailure.testIndex}/${vmResult.totalTests}`
+      : `${failedCount} of ${vmResult.totalTests} test cases failed.`;
 
     return {
       success: true,
@@ -942,8 +960,8 @@ export async function evaluateSubmission(payload: EvaluationPayload): Promise<Ev
       correct: false,
       status: 'incorrect',
       score: 0,
-      message: `${failedCount} of ${vmResult.totalTests} test cases failed.`,
-      feedback: `Your fix did not pass all test cases. ${failDetail}`,
+      message: failureMessage,
+      feedback: failDetail,
       suggestions: [
         bugDescription || 'Check boundary conditions and edge cases.',
         'Review the failing test cases in the test console.',

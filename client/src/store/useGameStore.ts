@@ -43,12 +43,13 @@ export interface Challenge {
   topic?: string;
   challengeStyle?: string;
   fingerprint?: string;
+  source?: string;
   buggyCode: string;
   correctCode: string;
   bugLine?: number;
   bugDescription: string;
   hints: string[];
-  testCases: { input: string; expectedOutput: string }[];
+  testCases: { input: string; expectedOutput: string; hidden?: boolean }[];
   options?: ChallengeOption[];
   correctOptionId?: string;
   expectedOutput?: string;
@@ -71,6 +72,15 @@ export interface GameReview {
   comboBonus: boolean;
   passedTests?: number;
   totalTests?: number;
+  testDetails?: Array<{
+    testIndex: number;
+    passed: boolean;
+    input: string;
+    expected: string;
+    actual: string;
+    error?: string;
+    hidden?: boolean;
+  }>;
   correctAnswer?: string;
   explanation?: string;
   errorDetails?: string;

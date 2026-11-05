@@ -41,6 +41,10 @@ export interface ServerStreakRecord {
  */
 export function validateScore(req: Request, res: Response, next: NextFunction) {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ success: false, error: 'Request body must be a valid JSON object.' });
+    }
+
     const factors = req.body as ServerScoreFactors;
 
     const basePoints = Math.max(0, factors.basePoints || 0);
@@ -175,6 +179,10 @@ export function validateStreak(req: Request, res: Response, next: NextFunction) 
  */
 export function validateHintRequest(req: Request, res: Response, next: NextFunction) {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ success: false, error: 'Request body must be a valid JSON object.' });
+    }
+
     const { hintsUsed, maxHints = 3, timeRemaining, phase } = req.body as {
       hintsUsed: number;
       maxHints?: number;

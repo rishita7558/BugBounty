@@ -17,6 +17,7 @@ import { StreakEngine } from '@/services/StreakEngine';
 import { PixelCloseButton } from '@/components/common/PixelCloseButton';
 import { ArcadeTicketModal } from '@/components/arcade/ArcadeTicketModal';
 import { type BountyTicketData } from '@/lib/ticketGenerator';
+import { EmptyBountiesState } from '@/components/common/EmptyBountiesState';
 import { User, Award, Trophy, Ticket, Clock, ShieldCheck } from 'lucide-react';
 
 /**
@@ -293,19 +294,7 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
             </div>
 
             {solvedList.length === 0 ? (
-              <div
-                style={{
-                  padding: '24px',
-                  textAlign: 'center',
-                  color: '#8199B5',
-                  fontSize: '0.8rem',
-                  border: '1px dashed rgba(129, 153, 181, 0.25)',
-                  background: 'rgba(5, 11, 24, 0.6)',
-                  fontFamily: 'var(--font-mono)',
-                }}
-              >
-                No solved challenges recorded yet. Remediate your first vulnerability in the arena!
-              </div>
+              <EmptyBountiesState />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {solvedList.map((item) => (

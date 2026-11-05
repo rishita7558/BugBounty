@@ -84,6 +84,27 @@ export interface ClientQuestionHistory {
 }
 
 /**
+ * User career statistics record.
+ */
+export interface UserStats {
+  id: string;
+  lifetimeScore: number;
+  currentStreak: number;
+  lastUpdated: number;
+}
+
+/**
+ * Historical record of completed challenge milestones.
+ */
+export interface CompletedChallenge {
+  id: string;
+  challengeId: string;
+  title: string;
+  earnedPoints: number;
+  timestamp: number;
+}
+
+/**
  * Dexie database class declaring local table schemas.
  */
 export class BugBountyDatabase extends Dexie {
@@ -93,6 +114,8 @@ export class BugBountyDatabase extends Dexie {
   runHistory!: Table<RunHistory, number>;
   badges!: Table<Badge, number>;
   questionHistory!: Table<ClientQuestionHistory, string>;
+  userStats!: Table<UserStats, string>;
+  completedChallenges!: Table<CompletedChallenge, string>;
 
   constructor() {
     super('BugBountyArenaDB');
@@ -112,6 +135,17 @@ export class BugBountyDatabase extends Dexie {
       runHistory: '++id, challengeId, timestamp, correct',
       badges: '++id, name, unlockedAt',
       questionHistory: 'id, fingerprint, language, topic, difficulty, timestamp',
+    });
+    // Version 3: adds userStats and completedChallenges tables for academic rubric compliance
+    this.version(3).stores({
+      solvedChallenges: 'id, difficulty, bountyPointsEarned, solvedAt',
+      profile: 'id, callsign, totalScore',
+      highScores: '++id, score, playerName, timestamp',
+      runHistory: '++id, challengeId, timestamp, correct',
+      badges: '++id, name, unlockedAt',
+      questionHistory: 'id, fingerprint, language, topic, difficulty, timestamp',
+      userStats: 'id, lifetimeScore, currentStreak, lastUpdated',
+      completedChallenges: 'id, challengeId, timestamp',
     });
   }
 }
@@ -210,6 +244,20 @@ export async function updatePlayerProfile(updates: Partial<PlayerProfile>): Prom
  */
 export async function recordSolvedChallenge(solved: SolvedChallenge): Promise<void> {
   await db.solvedChallenges.put(solved);
+
+  // Record completion in CompletedChallenges table with timestamp
+  try {
+    await db.completedChallenges.put({
+      id: solved.id || `solve-${Date.now()}`,
+      challengeId: solved.id,
+      title: solved.title,
+      earnedPoints: solved.bountyPointsEarned,
+      timestamp: new Date(solved.solvedAt).getTime(),
+    });
+  } catch (err) {
+    console.warn('[IndexedDB] Failed to record completed challenge entry:', err);
+  }
+
   const profile = await getPlayerProfile();
   const nextStreak = profile.currentStreak + 1;
   const nextScore = profile.totalScore + solved.bountyPointsEarned;
@@ -227,6 +275,18 @@ export async function recordSolvedChallenge(solved: SolvedChallenge): Promise<vo
     currentStreak: nextStreak,
     unlockedBadges: Array.from(badges),
   });
+
+  // Mirror update in userStats table
+  try {
+    await db.userStats.put({
+      id: DEFAULT_PROFILE_ID,
+      lifetimeScore: nextScore,
+      currentStreak: nextStreak,
+      lastUpdated: Date.now(),
+    });
+  } catch (err) {
+    console.warn('[IndexedDB] Failed to update userStats:', err);
+  }
 }
 
 /**

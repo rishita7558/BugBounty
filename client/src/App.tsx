@@ -568,10 +568,10 @@ function App() {
                   fontSize: '0.65rem',
                   color: '#8199B5',
                   fontFamily: 'var(--font-mono)',
-                  letterSpacing: '1px',
+                  letterSpacing: '0.5px',
                 }}
               >
-                ADVANCED VULNERABILITY REMEDIATION ARENA
+                BugBounty Arena: Zero-Database Client-Side Vulnerability &amp; Algorithmic Debugging Sandbox
               </div>
             </div>
           </div>
@@ -616,42 +616,13 @@ function App() {
                 setSynthesisLabOpen(true);
                 play('click');
               }}
-              title="Open Bounty Synthesis Lab (DSA vs Practical, Multi-Language Matrix, Topic & Difficulty Config)"
               style={{
-                border: '2px solid #00f0ff',
-                boxShadow: '2px 2px 0px #003366',
                 borderRadius: '0px',
-                background: '#0a1128',
-                color: '#00f0ff',
                 fontFamily: 'var(--font-arcade, monospace)',
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                padding: '6px 12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
+                textTransform: 'uppercase',
               }}
             >
-              <Cpu size={14} color="#00f0ff" />
-              <span>[SYNTHESIS LAB]</span>
-              <span style={{ color: getLanguageMeta(selectedLanguage).color, fontSize: '0.65rem' }}>
-                {getLanguageMeta(selectedLanguage).label.toUpperCase()}
-              </span>
-              {selectedTopic && (
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    color: '#8199B5',
-                    maxWidth: '130px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  • {getTopicById(selectedTopic)?.name || selectedTopic}
-                </span>
-              )}
+              [ SYNTHESIS LAB ]
             </button>
 
             {/* Global Leaderboard trigger */}
@@ -786,7 +757,7 @@ function App() {
                       fontFamily: 'var(--font-mono)',
                     }}
                   >
-                    V8 • MULTI-LANG SANDBOX ENGAGED
+                    BugBounty Arena: Zero-Database Client-Side Vulnerability &amp; Algorithmic Debugging Sandbox
                   </span>
                 </div>
 

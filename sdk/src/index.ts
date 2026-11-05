@@ -290,7 +290,6 @@ export class BugBountyReporter {
 function triggerCapturedBug() {
   console.log("Analyzing captured bug: ${errorMsg.replace(/"/g, '\\"')}");
   ${errorStack}
-  // TODO: Fix the issue below
   throw new Error("${errorMsg.replace(/"/g, '\\"')}");
 }
 

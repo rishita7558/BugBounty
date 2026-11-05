@@ -188,42 +188,89 @@ export function EvaluationFailureModal({
         </div>
 
         {/* Failure Message Box */}
-        <div
-          style={{
-            background: '#050B18',
-            border: '1px solid rgba(255, 59, 105, 0.35)',
-            padding: '14px',
-            marginBottom: '16px',
-            textAlign: 'left',
-          }}
-        >
-          <div
-            style={{
-              fontSize: '0.65rem',
-              color: '#FF3B69',
-              marginBottom: '6px',
-              fontWeight: 700,
-              letterSpacing: '1px',
-              fontFamily: 'var(--font-mono)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <AlertTriangle size={14} color="#FF3B69" /> DIAGNOSTIC FEEDBACK:
-          </div>
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.82rem',
-              color: '#EAF8FF',
-              lineHeight: 1.5,
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {review.message || review.feedback || 'The submitted solution did not pass evaluation.'}
-          </div>
-        </div>
+        {(() => {
+          const firstFailure = review.testDetails?.find((d) => !d.passed);
+          const isHidden = Boolean(firstFailure?.hidden || review.message?.includes('hidden edge case') || review.explanation?.includes('hidden edge case'));
+          const failedIndex = firstFailure?.testIndex ?? (passedTests + 1);
+
+          return (
+            <div
+              style={{
+                background: '#050B18',
+                border: '1px solid rgba(255, 59, 105, 0.35)',
+                padding: '14px',
+                marginBottom: '16px',
+                textAlign: 'left',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.65rem',
+                  color: '#FF3B69',
+                  marginBottom: '8px',
+                  fontWeight: 700,
+                  letterSpacing: '1px',
+                  fontFamily: 'var(--font-mono)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '6px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AlertTriangle size={14} color="#FF3B69" /> DIAGNOSTIC FEEDBACK
+                </div>
+                <div style={{ color: '#FF3B69', fontSize: '0.72rem' }}>
+                  [FAILED TEST {failedIndex}/{totalTests}]
+                </div>
+              </div>
+
+              {isHidden ? (
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.85rem',
+                    color: '#FF7B99',
+                    padding: '8px',
+                    background: 'rgba(255, 59, 105, 0.08)',
+                    borderLeft: '3px solid #FF3B69',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Failed on hidden edge case verification.
+                </div>
+              ) : firstFailure ? (
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.8rem',
+                    color: '#EAF8FF',
+                    lineHeight: 1.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  <div><span style={{ color: '#8199B5' }}>Input:</span> [{firstFailure.input}]</div>
+                  <div><span style={{ color: '#00D9FF' }}>Expected:</span> [{firstFailure.expected}]</div>
+                  <div><span style={{ color: '#FF3B69' }}>Actual:</span> [{firstFailure.actual}]</div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.82rem',
+                    color: '#EAF8FF',
+                    lineHeight: 1.5,
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
+                  {review.message || review.feedback || 'The submitted solution did not pass evaluation.'}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Remediation Advice */}
         {review.explanation && review.explanation !== review.message && (

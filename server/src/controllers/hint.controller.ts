@@ -29,6 +29,14 @@ Return ONLY valid JSON:
  */
 export async function getHint(req: Request, res: Response, next: NextFunction) {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ success: false, error: 'Request body must be a valid JSON object.' });
+    }
+
+    if (typeof req.body.buggyCode !== 'string' || typeof req.body.description !== 'string') {
+      return res.status(400).json({ success: false, error: 'Fields "buggyCode" and "description" are required strings.' });
+    }
+
     const { buggyCode, description, hintLevel = 1 } = req.body as {
       buggyCode: string;
       description: string;

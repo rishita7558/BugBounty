@@ -10,6 +10,7 @@ import { getPlayerProfile, updatePlayerProfile, db } from '@/lib/db';
 
 const SESSION_SCORE_KEY = 'bugbounty_session_score';
 const SESSION_BOUNTIES_KEY = 'bugbounty_session_bounties';
+const LIFETIME_CACHE_KEY = 'bugbounty_cached_lifetime';
 
 function getSessionStorageNumber(key: string, defaultVal = 0): number {
   if (typeof window === 'undefined') return defaultVal;
@@ -30,6 +31,25 @@ function setSessionStorageNumber(key: string, val: number): void {
   }
 }
 
+function getLocalStorageNumber(key: string, defaultVal = 0): number {
+  if (typeof window === 'undefined') return defaultVal;
+  try {
+    const val = localStorage.getItem(key);
+    return val !== null ? parseInt(val, 10) || defaultVal : defaultVal;
+  } catch {
+    return defaultVal;
+  }
+}
+
+function setLocalStorageNumber(key: string, val: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, String(val));
+  } catch {
+    // Ignore quota or private-browsing restrictions
+  }
+}
+
 export interface ScoreStoreState extends UserScoreState {
   isHydrated: boolean;
   hydrateScores: () => Promise<void>;
@@ -40,7 +60,7 @@ export interface ScoreStoreState extends UserScoreState {
 export const useScoreStore = create<ScoreStoreState>()((set, get) => ({
   sessionScore: getSessionStorageNumber(SESSION_SCORE_KEY, 0),
   sessionBountiesSolved: getSessionStorageNumber(SESSION_BOUNTIES_KEY, 0),
-  lifetimeScore: 0,
+  lifetimeScore: getLocalStorageNumber(LIFETIME_CACHE_KEY, 0),
   lifetimeBountiesSolved: 0,
   isHydrated: false,
 
@@ -48,8 +68,10 @@ export const useScoreStore = create<ScoreStoreState>()((set, get) => ({
     try {
       const profile = await getPlayerProfile();
       const solvedCount = await db.solvedChallenges.count();
+      const totalScore = profile.totalScore || 0;
+      setLocalStorageNumber(LIFETIME_CACHE_KEY, totalScore);
       set({
-        lifetimeScore: profile.totalScore || 0,
+        lifetimeScore: totalScore,
         lifetimeBountiesSolved: solvedCount,
         isHydrated: true,
       });
@@ -68,9 +90,10 @@ export const useScoreStore = create<ScoreStoreState>()((set, get) => ({
     const newLifetimeScore = current.lifetimeScore + delta;
     const newLifetimeBounties = current.lifetimeBountiesSolved + 1;
 
-    // Update session storage immediately
+    // Update storage immediately
     setSessionStorageNumber(SESSION_SCORE_KEY, newSessionScore);
     setSessionStorageNumber(SESSION_BOUNTIES_KEY, newSessionBounties);
+    setLocalStorageNumber(LIFETIME_CACHE_KEY, newLifetimeScore);
 
     // Update in-memory state
     set({
@@ -80,10 +103,16 @@ export const useScoreStore = create<ScoreStoreState>()((set, get) => ({
       lifetimeBountiesSolved: newLifetimeBounties,
     });
 
-    // Transactional write to Dexie.js profile
+    // Transactional write to Dexie.js profile and userStats
     try {
-      await updatePlayerProfile({
+      const profile = await updatePlayerProfile({
         totalScore: newLifetimeScore,
+      });
+      await db.userStats.put({
+        id: 'local-player',
+        lifetimeScore: newLifetimeScore,
+        currentStreak: profile.currentStreak,
+        lastUpdated: Date.now(),
       });
     } catch (err) {
       console.error('[useScoreStore] Failed to update lifetime score in IndexedDB:', err);

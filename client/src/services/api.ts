@@ -139,6 +139,7 @@ export async function reviewCode(
     message?: string;
     passedTests?: number;
     totalTests?: number;
+    testDetails?: any[];
     correctAnswer?: string;
     explanation?: string;
   }>('/challenge/review', payload);
@@ -159,6 +160,7 @@ export async function reviewCode(
     comboBonus: rawReview.comboBonus ?? false,
     passedTests: data.passedTests ?? rawReview.passedTests ?? (rawReview.correct ? 1 : 0),
     totalTests: data.totalTests ?? rawReview.totalTests ?? 1,
+    testDetails: data.testDetails ?? rawReview.testDetails,
     correctAnswer: data.correctAnswer ?? rawReview.correctAnswer,
     explanation: data.explanation ?? rawReview.explanation ?? rawReview.feedback ?? '',
   };
