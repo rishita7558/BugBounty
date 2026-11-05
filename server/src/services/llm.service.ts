@@ -111,18 +111,8 @@ export async function queryLLM(systemPrompt: string, userPrompt: string): Promis
     userPrompt.includes('Evaluate the fix') ||
     systemPrompt.includes('code evaluation engine')
   ) {
-    // When LLM is offline or unconfigured, do NOT fake a successful review!
-    return {
-      isCorrect: false,
-      correct: false,
-      passedTests: 0,
-      totalTests: 1,
-      score: 0,
-      message: 'Automated evaluation service is operating offline. Falling back to deterministic sandbox verification.',
-      explanation: 'No LLM connection available for semantic review.',
-      suggestions: ['Ensure code passes deterministic test assertions.'],
-      comboBonus: false,
-    };
+    // When LLM is offline or unconfigured, return null to trigger deterministic offline evaluation
+    return null;
   }
 
   if (

@@ -422,6 +422,8 @@ function App() {
         challengeId: challenge.id,
         language: (challenge as any).language || selectedLanguage,
         challengeStyle: (challenge as any).challengeStyle || selectedStyle,
+        userAnswer: playerCode.trim(),
+        selectedOptionId: (challenge as any).selectedOptionId || playerCode.trim(),
         testCases: challenge.testCases,
         correctCode: (challenge as any).correctCode,
         correctOptionId: (challenge as any).correctOptionId,
