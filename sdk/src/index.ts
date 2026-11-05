@@ -83,7 +83,7 @@ export class BugBountyReporter {
         timestamp: Date.now(),
       };
       BugBountyReporter.errors.push(captured);
-      console.warn('[CodeDuel Reporter Captured Error]', event.error || event.message);
+      console.warn('[BugBounty Reporter Captured Error]', event.error || event.message);
       updateBadge();
     };
     window.addEventListener('error', errorHandler);
@@ -98,7 +98,7 @@ export class BugBountyReporter {
         timestamp: Date.now(),
       };
       BugBountyReporter.errors.push(captured);
-      console.warn('[CodeDuel Reporter Captured Rejection]', reason);
+      console.warn('[BugBounty Reporter Captured Rejection]', reason);
       updateBadge();
     };
     window.addEventListener('unhandledrejection', rejectionHandler);
@@ -125,9 +125,9 @@ export class BugBountyReporter {
       });
     }
 
-    // 4. Inject "Report Bug to CodeDuel" button into the DOM
+    // 4. Inject "Report Bug to BugBounty" button into the DOM
     const container = document.createElement('div');
-    container.id = 'codeduel-reporter-widget';
+    container.id = 'bugbounty-reporter-widget';
     container.style.cssText = `
       position: fixed;
       ${position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
@@ -156,8 +156,8 @@ export class BugBountyReporter {
     `;
     button.innerHTML = `
       <span style="font-size: 15px;">👾</span>
-      <span>Report Bug to CodeDuel</span>
-      <span id="codeduel-error-count" style="display:none; background: #ff0055; color: #fff; border-radius: 999px; padding: 2px 7px; font-size: 10px;">0</span>
+      <span>Report Bug to BugBounty</span>
+      <span id="bugbounty-error-count" style="display:none; background: #ff0055; color: #fff; border-radius: 999px; padding: 2px 7px; font-size: 10px;">0</span>
     `;
 
     button.onmouseenter = () => {
@@ -186,7 +186,7 @@ export class BugBountyReporter {
     this.cleanupFns.push(() => container.remove());
 
     const updateBadge = () => {
-      const badge = document.getElementById('codeduel-error-count');
+      const badge = document.getElementById('bugbounty-error-count');
       if (badge) {
         const count = BugBountyReporter.errors.length;
         if (count > 0) {
@@ -269,7 +269,7 @@ export class BugBountyReporter {
   }
 
   /**
-   * Build the complete 1-click debug URL pointing to CodeDuel Arena.
+   * Build the complete 1-click debug URL pointing to BugBounty.
    */
   static buildShareUrl(endpoint: string, appTitle: string): string {
     const compressed = this.serializeCurrentState(appTitle);
@@ -285,8 +285,8 @@ export class BugBountyReporter {
     const errorMsg = latestError?.message || 'Error occurred during execution';
     const errorStack = latestError?.stack ? `\n/* Stack trace:\n${latestError.stack}\n*/` : '';
 
-    return `// CodeDuel Reproduction Sandbox
-// Generated automatically by @codeduel/client-checker
+    return `// BugBounty Reproduction Sandbox
+// Generated automatically by @bugbounty/client-checker
 function triggerCapturedBug() {
   console.log("Analyzing captured bug: ${errorMsg.replace(/"/g, '\\"')}");
   ${errorStack}

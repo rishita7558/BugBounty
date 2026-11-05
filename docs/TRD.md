@@ -1,4 +1,4 @@
-# Technical Requirements Document — CodeDuel: BugBounty Arena
+# Technical Requirements Document — BugBounty
 
 ## Architecture
 - **Frontend:** React 18 + Vite + TypeScript + Tailwind CSS v4

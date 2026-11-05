@@ -1,7 +1,7 @@
 /**
  * @file questionHistoryService.ts
  * @description Persistent question history, canonical AST/token fingerprinting,
- * and semantic similarity duplicate detection system for CodeDuel: BugBounty Arena.
+ * and semantic similarity duplicate detection system for BugBounty.
  * 
  * Enforces strict non-repetition across page refreshes, browser restarts, and server sessions.
  */

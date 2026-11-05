@@ -1,6 +1,6 @@
 /**
  * @file server.ts
- * @description HTTP server bootstrap entry point for CodeDuel: BugBounty Arena.
+ * @description HTTP server bootstrap entry point for BugBounty.
  * Loads environment configurations, binds to designated port, and starts listening for incoming proxy traffic.
  */
 
@@ -12,7 +12,7 @@ const PORT = parseInt(process.env.PORT ?? '3001', 10);
 app.listen(PORT, () => {
   console.log(`
   ╔══════════════════════════════════════════════════════╗
-  ║  🎮  CodeDuel: BugBounty Arena — API Gateway Server  ║
+  ║  🎮  BugBounty — API Gateway Server                  ║
   ║  🌐  http://localhost:${PORT}                         ║
   ║  📡  Health: http://localhost:${PORT}/api/health       ║
   ╚══════════════════════════════════════════════════════╝

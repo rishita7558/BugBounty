@@ -1,6 +1,6 @@
 /**
  * @file AppErrors.ts
- * @description Strongly typed application error hierarchy for CodeDuel: BugBounty Arena.
+ * @description Strongly typed application error hierarchy for BugBounty.
  * Provides granular error domain classification, serialization, and recoverable state reporting.
  */
 

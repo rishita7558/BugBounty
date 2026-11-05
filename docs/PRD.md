@@ -1,7 +1,7 @@
-# Product Requirements Document — CodeDuel: BugBounty Arena
+# Product Requirements Document — BugBounty
 
 ## Overview
-CodeDuel: BugBounty Arena is an arcade-style code debugging playground where developers find and fix bugs in AI-generated code challenges.
+BugBounty is an arcade-style code debugging playground where developers find and fix bugs in AI-generated code challenges.
 
 ## Core Features
 1. **Dynamic Challenge Generation** — LLM-powered bug creation across categories (logic, async, DOM, security, performance, syntax)

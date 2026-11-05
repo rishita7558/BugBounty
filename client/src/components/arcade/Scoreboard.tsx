@@ -1,6 +1,6 @@
 /**
  * @file Scoreboard.tsx
- * @description Header statistics bar for CodeDuel: BugBounty Arena — ICE MATRIX edition.
+ * @description Header statistics bar for BugBounty — ICE MATRIX edition.
  * Displays cumulative player score, active cryogenic combo multiplier, solved challenge totals,
  * and current versus all-time high calendar-day streak metrics.
  */

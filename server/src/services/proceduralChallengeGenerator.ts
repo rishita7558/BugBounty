@@ -1,6 +1,6 @@
 /**
  * @file proceduralChallengeGenerator.ts
- * @description Infinite procedural challenge generator engine for CodeDuel: BugBounty Arena.
+ * @description Infinite procedural challenge generator engine for BugBounty.
  * Generates an endless stream of unique, parameterized DSA (Data Structures & Algorithms),
  * systems, concurrency, memory safety, and security debugging challenges across all 8 languages:
  * JavaScript, TypeScript, Python, Rust, Go, C++, Java, and SQL.

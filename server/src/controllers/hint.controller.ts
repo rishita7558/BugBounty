@@ -10,7 +10,7 @@ import { queryLLM } from '../services/llm.service.js';
 /**
  * System prompt defining the strict JSON structure for tiered hints.
  */
-const HINT_SYSTEM_PROMPT = `You are a hint provider for "CodeDuel: BugBounty Arena".
+const HINT_SYSTEM_PROMPT = `You are a hint provider for "BugBounty".
 The player is stuck on a debugging challenge. Provide a helpful hint WITHOUT giving away the answer.
 
 Return ONLY valid JSON:

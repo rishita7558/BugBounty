@@ -154,12 +154,12 @@ describe('useGameStore Game Mechanics & State Integration', () => {
 
     const afterFirstToggle = useGameStore.getState().scanlinesEnabled;
     expect(afterFirstToggle).toBe(!initial);
-    expect(mockLocalStorage.getItem('codeduel_scanlines_enabled')).toBe(String(!initial));
+    expect(mockLocalStorage.getItem('bugbounty_scanlines_enabled')).toBe(String(!initial));
 
     useGameStore.getState().toggleScanlines();
     const afterSecondToggle = useGameStore.getState().scanlinesEnabled;
     expect(afterSecondToggle).toBe(initial);
-    expect(mockLocalStorage.getItem('codeduel_scanlines_enabled')).toBe(String(initial));
+    expect(mockLocalStorage.getItem('bugbounty_scanlines_enabled')).toBe(String(initial));
   });
 
   it('toggleCRT mirrors toggleScanlines and persists to localStorage', () => {
@@ -184,7 +184,7 @@ describe('useGameStore Game Mechanics & State Integration', () => {
 
     expect(useGameStore.getState().crtEnabled).toBe(!initial);
     expect(useGameStore.getState().scanlinesEnabled).toBe(!initial);
-    expect(mockLocalStorage.getItem('codeduel_scanlines_enabled')).toBe(String(!initial));
+    expect(mockLocalStorage.getItem('bugbounty_scanlines_enabled')).toBe(String(!initial));
   });
 });
 

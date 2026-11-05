@@ -1,6 +1,6 @@
 /**
  * @file AudioManager.ts
- * @description Centralized Web Audio API manager for CodeDuel: BugBounty Arena.
+ * @description Centralized Web Audio API manager for BugBounty.
  * Safely handles browser autoplay policies by attaching window gesture listeners
  * to resume and unlock the AudioContext on the first user interaction.
  */

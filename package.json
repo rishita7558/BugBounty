@@ -1,8 +1,8 @@
 {
-  "name": "codeduel-bugbounty",
+  "name": "bugbounty",
   "version": "1.0.0",
   "private": true,
-  "description": "CodeDuel: BugBounty Arena — The Arcade-Style Client-Side Code Debugging & Vulnerability Remediation Playground",
+  "description": "BugBounty — The Arcade-Style Client-Side Code Debugging & Vulnerability Remediation Playground",
   "scripts": {
     "dev": "concurrently -n client,server -c cyan,magenta \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
     "build": "npm run build --prefix sdk && npm run build --prefix client && npm run build --prefix server",

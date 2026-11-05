@@ -1,6 +1,6 @@
 /**
  * @file main.tsx
- * @description Application bootstrap entry point for CodeDuel: BugBounty Arena.
+ * @description Application bootstrap entry point for BugBounty.
  * Mounts the root React DOM tree inside StrictMode and wraps the application with a top-level ErrorBoundary.
  */
 

@@ -1,7 +1,7 @@
 {
-  "name": "@codeduel/client-checker",
+  "name": "@bugbounty/client-checker",
   "version": "1.0.0",
-  "description": "Embeddable bug checker SDK for CodeDuel: BugBounty Arena",
+  "description": "Embeddable bug checker SDK for BugBounty",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -9,7 +9,7 @@
     "build": "tsc",
     "dev": "tsc --watch"
   },
-  "keywords": ["codeduel", "bugbounty", "checker", "sdk"],
+  "keywords": ["bugbounty", "checker", "sdk"],
   "license": "MIT",
   "dependencies": {
     "lz-string": "^1.5.0"

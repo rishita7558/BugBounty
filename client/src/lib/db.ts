@@ -86,7 +86,7 @@ export interface ClientQuestionHistory {
 /**
  * Dexie database class declaring local table schemas.
  */
-export class CodeDuelDatabase extends Dexie {
+export class BugBountyDatabase extends Dexie {
   solvedChallenges!: Table<SolvedChallenge, string>;
   profile!: Table<PlayerProfile, string>;
   highScores!: Table<HighScore, number>;
@@ -95,7 +95,7 @@ export class CodeDuelDatabase extends Dexie {
   questionHistory!: Table<ClientQuestionHistory, string>;
 
   constructor() {
-    super('CodeDuelArenaDB');
+    super('BugBountyArenaDB');
     // Version 1: original schema — keep intact for upgrade path
     this.version(1).stores({
       solvedChallenges: 'id, difficulty, bountyPointsEarned, solvedAt',
@@ -116,7 +116,7 @@ export class CodeDuelDatabase extends Dexie {
   }
 }
 
-export const db = new CodeDuelDatabase();
+export const db = new BugBountyDatabase();
 
 /**
  * Records a generated challenge into local IndexedDB question history.

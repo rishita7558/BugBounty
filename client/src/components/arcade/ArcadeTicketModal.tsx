@@ -158,7 +158,7 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
             }}
           >
             <div style={{ fontSize: '0.65rem', letterSpacing: '3px', color: '#00D9FF', textTransform: 'uppercase' }}>
-              ★ CODEDUEL: ICE MATRIX ARENA ★
+              ★ BUGBOUNTY: ICE MATRIX ARENA ★
             </div>
             <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#EAF8FF', margin: '4px 0' }}>
               CERTIFIED BOUNTY REDEMPTION

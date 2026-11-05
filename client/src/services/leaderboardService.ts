@@ -1,6 +1,6 @@
 /**
  * @file leaderboardService.ts
- * @description Serverless leaderboard client service for CodeDuel: BugBounty Arena.
+ * @description Serverless leaderboard client service for BugBounty.
  * Employs GitHub Gist as an open, zero-database global leaderboard backend with
  * automatic, resilient fallback to client-side IndexedDB (Dexie) storage when offline or unconfigured.
  */
@@ -26,9 +26,9 @@ export interface LeaderboardResult {
   error?: string;
 }
 
-const GIST_ID_KEY = 'codeduel_leaderboard_gist_id';
-const GIST_TOKEN_KEY = 'codeduel_leaderboard_gist_token';
-const GIST_FILENAME = 'codeduel-leaderboard.json';
+const GIST_ID_KEY = 'bugbounty_leaderboard_gist_id';
+const GIST_TOKEN_KEY = 'bugbounty_leaderboard_gist_token';
+const GIST_FILENAME = 'bugbounty-leaderboard.json';
 
 /**
  * Curated arcade legends seeded into local storage to provide authentic leaderboard competition.

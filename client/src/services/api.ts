@@ -1,6 +1,6 @@
 /**
  * @file api.ts
- * @description API client communication layer for CodeDuel: BugBounty Arena.
+ * @description API client communication layer for BugBounty.
  * Encapsulates communication with backend services for challenge generation,
  * code review evaluations, and hint state machines.
  */

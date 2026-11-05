@@ -1,4 +1,4 @@
-# System Architecture Document — CodeDuel: BugBounty Arena
+# System Architecture Document — BugBounty
 
 > **Version:** 1.0.0  
 > **Status:** Production Standard  
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary & Architectural Principles
 
-**CodeDuel: BugBounty Arena** is an arcade-inspired web application designed for interactive software vulnerability remediation and code debugging. The architecture prioritizes client-side independence, sub-second latency, deterministic state transitions, and zero mandatory backend database infrastructure.
+**BugBounty** is an arcade-inspired web application designed for interactive software vulnerability remediation and code debugging. The architecture prioritizes client-side independence, sub-second latency, deterministic state transitions, and zero mandatory backend database infrastructure.
 
 ### Core Architectural Tenets
 
@@ -37,7 +37,7 @@
 flowchart TD
     Player["Hacker / Player\n(Web Browser)"]
     
-    subgraph CodeDuelPlatform["CodeDuel Platform"]
+    subgraph BugBountyPlatform["BugBounty Platform"]
         ClientApp["Client Application\n(React 18 + Vite SPA)"]
         ServerProxy["API Gateway Proxy\n(Node.js + Express)"]
     end
@@ -148,7 +148,7 @@ flowchart TB
   - $\Delta\text{days} > 1$: Lapsed streak; resets active streak to 1 while preserving all-time record.
 
 ### 3.6 Offline Persistence Tier (`db.ts`)
-- IndexedDB database (`CodeDuelArenaDB`) configured via Dexie.js:
+- IndexedDB database (`BugBountyArenaDB`) configured via Dexie.js:
   - `solvedChallenges`: Archive of completed bounties with user code and elapsed time.
   - `profile`: Hacker callsign, career points, active streak, and badge achievements.
   - `highScores`: Historical leaderboard runs.

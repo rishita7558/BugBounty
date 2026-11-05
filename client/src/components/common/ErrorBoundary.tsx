@@ -1,6 +1,6 @@
 /**
  * @file ErrorBoundary.tsx
- * @description Production-grade React Error Boundary component designed for the CodeDuel arcade interface.
+ * @description Production-grade React Error Boundary component designed for the BugBounty arcade interface.
  * Isolates runtime UI failures to specific component trees, preventing cascading crashes across the arena.
  * Styled in Ice Matrix cyber aesthetics.
  */

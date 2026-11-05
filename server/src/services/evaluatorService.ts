@@ -1,7 +1,7 @@
 /**
  * @file evaluatorService.ts
  * @description Secure server-side code execution, test assertion engine,
- * and deterministic answer evaluation for CodeDuel: BugBounty Arena.
+ * and deterministic answer evaluation for BugBounty.
  * 
  * Enforces zero false positives and zero false negatives:
  * - Code is executed against test cases in isolated node:vm sandbox with timeout

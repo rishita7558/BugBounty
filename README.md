@@ -1,4 +1,4 @@
-# 🎮 CodeDuel: BugBounty Arena
+# 🎮 BugBounty
 
 > **The Arcade-Style Client-Side Code Debugging & Vulnerability Remediation Playground**
 
@@ -8,7 +8,7 @@
 
 ## 🚀 Overview
 
-CodeDuel: BugBounty Arena is an interactive code debugging game where players find and fix bugs in AI-generated code challenges. Featuring a cyberpunk/retro-arcade aesthetic, combo scoring mechanics, ticking bomb timers, and procedural sound synthesis.
+BugBounty is an interactive code debugging game where players find and fix bugs in AI-generated code challenges. Featuring a cyberpunk/retro-arcade aesthetic, combo scoring mechanics, ticking bomb timers, and procedural sound synthesis.
 
 ### Key Features
 
@@ -41,7 +41,7 @@ IndexedDB / Web Workers / Web Audio API
 ## 📁 Project Structure
 
 ```
-codeduel-bugbounty/
+bugbounty/
 ├── client/          # React 18 + Vite + TypeScript frontend
 ├── server/          # Minimal Express.js LLM proxy
 ├── sdk/             # Embeddable bug checker SDK
@@ -103,4 +103,4 @@ The client runs on `http://localhost:5173` and the server on `http://localhost:3
 
 ## 📄 License
 
-MIT © CodeDuel Team
+MIT © BugBounty Team

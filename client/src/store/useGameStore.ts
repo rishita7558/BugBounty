@@ -1,6 +1,6 @@
 /**
  * @file useGameStore.ts
- * @description Centralized Zustand state management store for CodeDuel: BugBounty Arena.
+ * @description Centralized Zustand state management store for BugBounty.
  * Coordinates reactive game phases, Monaco editor state, arcade countdown timers,
  * progressive hint state machines, daily calendar streaks, and scoring strategy breakdowns.
  */
@@ -175,8 +175,8 @@ export interface GameState {
   resetGame: () => void;
 }
 
-const STREAK_STORAGE_KEY = 'codeduel_bugbounty_streak_v1';
-const SCANLINES_STORAGE_KEY = 'codeduel_scanlines_enabled';
+const STREAK_STORAGE_KEY = 'bugbounty_streak_v1';
+const SCANLINES_STORAGE_KEY = 'bugbounty_scanlines_enabled';
 
 /**
  * Loads scanlines / CRT filter preference from browser localStorage.

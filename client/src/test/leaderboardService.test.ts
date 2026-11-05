@@ -107,7 +107,7 @@ describe('Serverless Leaderboard Service', () => {
 
     const mockGistData = {
       files: {
-        'codeduel-leaderboard.json': {
+        'bugbounty-leaderboard.json': {
           content: JSON.stringify([
             {
               callsign: 'GIST_CHAMPION',

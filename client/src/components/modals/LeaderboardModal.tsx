@@ -1,6 +1,6 @@
 /**
  * @file LeaderboardModal.tsx
- * @description Serverless arcade leaderboard modal dialog for CodeDuel: BugBounty Arena — ICE MATRIX edition.
+ * @description Serverless arcade leaderboard modal dialog for BugBounty — ICE MATRIX edition.
  * Displays global and local rankings using GitHub Gist synchronization with seamless
  * fallback to client-side IndexedDB persistence, rendered in authentic Ice Matrix cyberpunk styling.
  */

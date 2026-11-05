@@ -1,6 +1,6 @@
-# Contributing to CodeDuel: BugBounty Arena
+# Contributing to BugBounty
 
-Thank you for your interest in contributing to **CodeDuel: BugBounty Arena**! We are committed to maintaining an open, modular, robust, and accessible platform for interactive debugging and vulnerability remediation.
+Thank you for your interest in contributing to **BugBounty**! We are committed to maintaining an open, modular, robust, and accessible platform for interactive debugging and vulnerability remediation.
 
 Please take a few moments to review these contribution guidelines before submitting code, filing issues, or opening pull requests.
 
@@ -26,7 +26,7 @@ We expect all contributors, maintainers, and community participants to adhere to
 The repository is organized as a multi-package workspace:
 
 ```
-codeduel-bugbounty/
+bugbounty/
 ├── client/          # Frontend application (React 18 + Vite + TypeScript)
 ├── server/          # API Gateway & Security Proxy (Express.js + TypeScript)
 ├── sdk/             # Standalone micro-SDK for external bug reporting
@@ -39,8 +39,8 @@ Clone the repository and install dependencies across all workspaces:
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/your-org/codeduel-bugbounty.git
-cd codeduel-bugbounty
+git clone https://github.com/your-org/bugbounty.git
+cd bugbounty
 
 # 2. Install workspace dependencies
 npm install
@@ -189,4 +189,4 @@ npm test
    - Address feedback constructively and keep commits organized.
 5. **Merge:** Once approved and CI checks pass, maintainers will squash-and-merge into `main`.
 
-Thank you for contributing to CodeDuel: BugBounty Arena!
+Thank you for contributing to BugBounty!

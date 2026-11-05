@@ -150,7 +150,7 @@ export function BountyTicketCard({
           }}
         >
           <div style={{ fontSize: '0.65rem', letterSpacing: '3px', color: '#00f0ff', textTransform: 'uppercase' }}>
-            ★ CODEDUEL: ICE MATRIX ARENA ★
+            ★ BUGBOUNTY: ICE MATRIX ARENA ★
           </div>
           <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#eaf8ff', margin: '4px 0' }}>
             CERTIFIED BOUNTY REDEMPTION

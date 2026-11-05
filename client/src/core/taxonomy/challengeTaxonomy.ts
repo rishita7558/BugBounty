@@ -1,6 +1,6 @@
 /**
  * @file challengeTaxonomy.ts
- * @description Comprehensive language and vulnerability domain taxonomy for CodeDuel: BugBounty Arena.
+ * @description Comprehensive language and vulnerability domain taxonomy for BugBounty.
  * Organizes code debugging challenges across JavaScript, TypeScript, Python, Rust, Go, C++, Java, and SQL
  * with metadata, common bug archetypes, difficulty tiers, and Monaco editor mappings.
  */

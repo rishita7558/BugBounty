@@ -1,6 +1,6 @@
 /**
  * @file App.tsx
- * @description Main application container for CodeDuel: BugBounty Arena — ICE MATRIX Edition.
+ * @description Main application container for BugBounty — ICE MATRIX Edition.
  * Orchestrates game phases, 3D interactive Ice Crystal canvas, Monaco code editor,
  * sandboxed Web Worker execution, cryogenic countdown HUD, combo multipliers,
  * state machines, and resilience error boundaries.
@@ -79,7 +79,7 @@ import {
 } from 'lucide-react';
 
 /**
- * Root interactive component for the CodeDuel BugBounty Arena — ICE MATRIX.
+ * Root interactive component for BugBounty — ICE MATRIX.
  *
  * @returns Rendered arena interface protected by domain error boundaries.
  */
@@ -545,7 +545,7 @@ function App() {
                     fontFamily: 'var(--font-heading)',
                   }}
                 >
-                  CODEDUEL
+                  BUGBOUNTY
                 </h1>
                 <span
                   style={{
@@ -1394,7 +1394,7 @@ function App() {
         }}
       >
         <div>
-          CODEDUEL: ICE MATRIX • ADVANCED PIXEL CYBERPUNK • MULTI-LANGUAGE ARENA
+          BUGBOUNTY: ICE MATRIX • ADVANCED PIXEL CYBERPUNK • MULTI-LANGUAGE ARENA
         </div>
         <div style={{ color: '#00D9FF' }}>
           PRESS [SHIFT+M] FOR DATA MATRIX STREAM

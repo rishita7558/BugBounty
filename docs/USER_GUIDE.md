@@ -1,4 +1,4 @@
-# User Guide — CodeDuel: BugBounty Arena
+# User Guide — BugBounty
 
 ## Getting Started
 
@@ -11,7 +11,7 @@
 ```bash
 # Clone the repository
 git clone <repo-url>
-cd codeduel-bugbounty
+cd bugbounty
 
 # Install root dependencies
 npm install

@@ -30,7 +30,7 @@ export interface BountyTicketData {
  */
 export async function downloadTicketAsPdf(
   element: HTMLElement,
-  filename = 'codeduel-bounty-ticket.pdf'
+  filename = 'bugbounty-ticket.pdf'
 ): Promise<void> {
   const canvas = await html2canvas(element, {
     scale: 2,
@@ -61,7 +61,7 @@ export async function downloadTicketAsPdf(
  */
 export async function downloadTicketAsImage(
   element: HTMLElement,
-  filename = 'codeduel-bounty-ticket.png'
+  filename = 'bugbounty-ticket.png'
 ): Promise<void> {
   const canvas = await html2canvas(element, {
     scale: 2,
