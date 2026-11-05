@@ -144,18 +144,6 @@ npm --prefix client test
 npm --prefix client run build
 npm --prefix server run build
 ```
-
----
-
-## 👥 Academic Evaluation & Rubric Compliance
-
-| Rubric Area | Mark Weight | Implementation Evidence |
-|-------------|------------|-------------------------|
-| **Code & Server Quality** | **40 Marks** | Strict request schema validation on all Express routes (`challenge.controller.ts`, `validation.controller.ts`), typed try/catch error handling, zero placeholder comments (`// TODO`), multi-model cascade with 5000ms timeout. |
-| **Scope & Innovation** | **15 Marks** | Zero-Database client-side architecture; full 8-language DSA & practical vulnerability matrix; Synthesis Lab multi-style bounty generator. |
-| **Presentation & Refresh Survival** | **30 Marks** | Immediate synchronous hydration from `sessionStorage` and Dexie IndexedDB (`userStats`, `completedChallenges`); zero-flash F5 persistence; pixel-art retro HUD; empty state ledger illustration. |
-| **Team & Git Hygiene** | **15 Marks** | Modular clean architecture (`/client`, `/server`, `/sdk`); clear architectural documentation; zero AI slop; production-ready build verification. |
-
 ---
 
 ## 📄 License
