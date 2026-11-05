@@ -10,7 +10,6 @@ import { useGameStore } from '@/store/useGameStore';
 import confetti from 'canvas-confetti';
 import { formatScore } from '@/lib/utils';
 import { recordSolvedChallenge, getPlayerProfile } from '@/lib/db';
-import { submitLeaderboardScore } from '@/services/leaderboardService';
 import { ArcadeTicketModal } from '@/components/arcade/ArcadeTicketModal';
 import { type BountyTicketData } from '@/lib/ticketGenerator';
 import {
@@ -90,17 +89,7 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
           solvedAt: new Date(),
         }).catch((err) => console.error('Failed to record solve to Dexie:', err));
 
-        // Prepare printable ticket data & record to leaderboard
-        submitLeaderboardScore({
-          callsign: 'CYBER_HUNTER',
-          score: score + (review.scoreBreakdown?.finalScore || review.score || 250),
-          totalSolved: 1,
-          maxCombo: Math.max(1, combo),
-          difficulty: challenge.difficulty,
-          language: (challenge.language as string) || 'javascript',
-          topic: challenge.topic,
-          timestamp: Date.now(),
-        }).catch(() => {});
+        // Prepare printable ticket data
         getPlayerProfile().then((profile) => {
           setTicketData({
             ticketId: Math.random().toString(36).substring(2, 8).toUpperCase(),

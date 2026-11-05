@@ -151,7 +151,7 @@ flowchart TB
 - IndexedDB database (`BugBountyArenaDB`) configured via Dexie.js:
   - `solvedChallenges`: Archive of completed bounties with user code and elapsed time.
   - `profile`: Hacker callsign, career points, active streak, and badge achievements.
-  - `highScores`: Historical leaderboard runs.
+  - `highScores`: Personal local high score runs.
   - `runHistory`: Detailed execution attempts.
   - `badges`: Unlocked achievement milestones (`NOVICE_HUNTER`, `BOUNTY_ADEPT`, `CODE_LEGEND`, `STREAK_WARRIOR`, `ZERO_DAY_MASTER`).
 

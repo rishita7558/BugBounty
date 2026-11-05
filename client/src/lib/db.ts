@@ -32,7 +32,7 @@ export interface PlayerProfile {
 }
 
 /**
- * High score leaderboard entry record.
+ * Personal high score achievement record.
  */
 export interface HighScore {
   id?: number;
@@ -312,7 +312,7 @@ export async function resetPlayerStreak(): Promise<void> {
 /**
  * Retrieves high scores sorted descending by score value.
  *
- * @param limit Maximum leaderboard entries to return.
+ * @param limit Maximum score entries to return.
  * @returns Array of HighScore records.
  */
 export async function getTopScores(limit = 10): Promise<HighScore[]> {

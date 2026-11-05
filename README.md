@@ -59,7 +59,8 @@ flowchart TD
 
 ## ⚡ Key Technical Innovations
 
-### 1. Zero-Database Client-Side Architecture
+### 1. 100% Client-Side Privacy & Zero-Database Architecture
+- **Strict Client-Side Privacy**: All scores, streaks, unlocked achievement badges, and solved bounty archives remain strictly client-confined. The app operates with zero mandatory cloud databases, external tracking cookies, or server-side player registries.
 - **No Stateful Server Database**: The backend operates strictly stateless, exposing zero database attack surface.
 - **Client Ledger via Dexie.js (IndexedDB)**: Career scores, streaks, unlocked achievement badges, and solved challenge milestones persist across hard refreshes (`Ctrl+F5`) in browser-local IndexedDB tables:
   - `userStats`: Career score, consecutive daily streaks, and last timestamp.

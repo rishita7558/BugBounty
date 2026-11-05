@@ -22,7 +22,6 @@ import { HintModal } from '@/components/modals/HintModal';
 import { SurrenderModal } from '@/components/modals/SurrenderModal';
 import { EvaluationFailureModal } from '@/components/modals/EvaluationFailureModal';
 import { PlayerProfileModal } from '@/components/modals/PlayerProfileModal';
-import { LeaderboardModal } from '@/components/modals/LeaderboardModal';
 import {
   BountySynthesisLabModal,
   type MatrixMode,
@@ -33,7 +32,12 @@ import { getLanguageMeta, getTopicById, type SupportedLanguage } from '@/core/ta
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { toAppError } from '@/core/errors/AppErrors';
 import { decodeChallengeFromUrl } from '@/lib/lzShare';
-import { recordClientQuestion, getClientQuestionExclusions } from '@/lib/db';
+import {
+  recordClientQuestion,
+  getClientQuestionExclusions,
+  getSolvedChallenges,
+  type SolvedChallenge,
+} from '@/lib/db';
 
 export type ChallengeStyle =
   | 'find-the-bug'
@@ -70,7 +74,8 @@ import {
   AlertCircle,
   X,
   User,
-  Trophy,
+  Flame,
+  CheckCircle2,
   Layers,
   Shield,
   Cpu,
@@ -103,6 +108,8 @@ function App() {
   const selectedLanguage = useGameStore((s) => s.selectedLanguage);
   const selectedTopic = useGameStore((s) => s.selectedTopic);
   const seenChallengeIds = useGameStore((s) => s.seenChallengeIds);
+  const streakRecord = useGameStore((s) => s.streakRecord);
+  const totalSolved = useGameStore((s) => s.totalSolved);
 
   // Store action dispatchers
   const setChallenge = useGameStore((s) => s.setChallenge);
@@ -124,7 +131,13 @@ function App() {
   const [surrenderOpen, setSurrenderOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [synthesisLabOpen, setSynthesisLabOpen] = useState(false);
-  const [leaderboardModalOpen, setLeaderboardModalOpen] = useState(false);
+  const [recentBounties, setRecentBounties] = useState<SolvedChallenge[]>([]);
+
+  useEffect(() => {
+    if (phase === 'idle' || phase === 'victory') {
+      getSolvedChallenges(6).then(setRecentBounties).catch(() => {});
+    }
+  }, [phase]);
   const [consoleOutput, setConsoleOutput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -625,17 +638,24 @@ function App() {
               [ SYNTHESIS LAB ]
             </button>
 
-            {/* Global Leaderboard trigger */}
+            {/* Arena Direct Action */}
             <button
               className="btn-pixel-cyber"
               onClick={() => {
-                setLeaderboardModalOpen(true);
+                if (phase === 'idle') {
+                  handleNewChallenge();
+                }
                 play('click');
               }}
-              title="Global Serverless Arcade Leaderboard"
+              style={{
+                borderRadius: '0px',
+                fontFamily: 'var(--font-arcade, monospace)',
+                textTransform: 'uppercase',
+                borderColor: (phase === 'playing' || phase === 'reviewing') ? '#00f0ff' : undefined,
+              }}
+              title={phase === 'playing' || phase === 'reviewing' ? 'Active Arena Session' : 'Enter BugBounty Arena'}
             >
-              <Trophy size={14} color="#00D9FF" />
-              <span style={{ color: '#EAF8FF' }}>Leaderboard</span>
+              {phase === 'playing' || phase === 'reviewing' ? '[ ARENA: ACTIVE ]' : '[ ARENA ]'}
             </button>
 
             {/* Player profile trigger */}
@@ -645,10 +665,15 @@ function App() {
                 setProfileOpen(true);
                 play('click');
               }}
-              title="Player Profile & Security Badges"
+              style={{
+                borderRadius: '0px',
+                fontFamily: 'var(--font-arcade, monospace)',
+                textTransform: 'uppercase',
+              }}
+              title="Player Profile, Daily Streak & Personal Stats"
             >
               <User size={14} color="#65CFFF" />
-              <span style={{ color: '#EAF8FF' }}>Profile</span>
+              <span style={{ color: '#EAF8FF' }}>[ PROFILE / STATS ]</span>
             </button>
 
             {/* Scanlines Filter Toggle */}
@@ -1031,6 +1056,290 @@ function App() {
                 )}
               </div>
             </div>
+
+            {/* ── Personal Growth & Recent Cleared Bounties Dashboard ── */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
+                gap: '20px',
+                marginTop: '24px',
+              }}
+            >
+              {/* Active Daily Streak & Personal Stats Card */}
+              <div
+                className="pixel-box"
+                style={{
+                  padding: '20px',
+                  background: 'rgba(8, 20, 38, 0.85)',
+                  border: '1px solid rgba(0, 217, 255, 0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Flame size={18} color="#FF6B00" />
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-arcade)',
+                        fontSize: '0.7rem',
+                        color: '#FFB800',
+                        letterSpacing: '1px',
+                      }}
+                    >
+                      ACTIVE DAILY STREAK &amp; STATS
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.55rem',
+                      fontFamily: 'var(--font-mono)',
+                      padding: '2px 6px',
+                      background: 'rgba(0, 217, 255, 0.1)',
+                      border: '1px solid rgba(0, 217, 255, 0.3)',
+                      color: '#00D9FF',
+                    }}
+                  >
+                    🔒 100% PRIVATE ZERO-DB
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '10px',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div
+                    style={{
+                      background: 'rgba(5, 11, 24, 0.7)',
+                      padding: '12px 8px',
+                      border: '1px solid rgba(255, 107, 0, 0.3)',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.55rem', color: '#8199B5', fontFamily: 'var(--font-arcade)' }}>
+                      CURRENT STREAK
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '1.3rem',
+                        fontFamily: 'var(--font-heading)',
+                        fontWeight: 800,
+                        color: '#FF6B00',
+                        marginTop: '4px',
+                      }}
+                    >
+                      🔥 {streakRecord?.currentStreak ?? 0}
+                    </div>
+                    <div style={{ fontSize: '0.55rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>
+                      DAYS ACTIVE
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: 'rgba(5, 11, 24, 0.7)',
+                      padding: '12px 8px',
+                      border: '1px solid rgba(0, 217, 255, 0.3)',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.55rem', color: '#8199B5', fontFamily: 'var(--font-arcade)' }}>
+                      LIFETIME SCORE
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '1.3rem',
+                        fontFamily: 'var(--font-heading)',
+                        fontWeight: 800,
+                        color: '#00D9FF',
+                        marginTop: '4px',
+                      }}
+                    >
+                      {lifetimeScore.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: '0.55rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>
+                      PTS EARNED
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: 'rgba(5, 11, 24, 0.7)',
+                      padding: '12px 8px',
+                      border: '1px solid rgba(57, 255, 20, 0.3)',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.55rem', color: '#8199B5', fontFamily: 'var(--font-arcade)' }}>
+                      TOTAL SOLVED
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '1.3rem',
+                        fontFamily: 'var(--font-heading)',
+                        fontWeight: 800,
+                        color: '#39FF14',
+                        marginTop: '4px',
+                      }}
+                    >
+                      {totalSolved}
+                    </div>
+                    <div style={{ fontSize: '0.55rem', color: '#8199B5', fontFamily: 'var(--font-mono)' }}>
+                      BOUNTIES
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: '0.62rem',
+                    color: '#8199B5',
+                    fontFamily: 'var(--font-mono)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  All stats, solve histories, and clearance badges are stored purely client-side via browser
+                  IndexedDB (Dexie). No external tracking, telemetry databases, or servers required.
+                </div>
+              </div>
+
+              {/* Recent Bounties Cleared Card */}
+              <div
+                className="pixel-box"
+                style={{
+                  padding: '20px',
+                  background: 'rgba(8, 20, 38, 0.85)',
+                  border: '1px solid rgba(0, 217, 255, 0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckCircle2 size={18} color="#00D9FF" />
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-arcade)',
+                        fontSize: '0.7rem',
+                        color: '#00D9FF',
+                        letterSpacing: '1px',
+                      }}
+                    >
+                      RECENT BOUNTIES CLEARED
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setProfileOpen(true);
+                      play('click');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#65CFFF',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.6rem',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    View All Profile Stats →
+                  </button>
+                </div>
+
+                {recentBounties.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {recentBounties.slice(0, 4).map((bounty) => (
+                      <div
+                        key={bounty.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 10px',
+                          background: 'rgba(5, 11, 24, 0.6)',
+                          border: '1px solid rgba(0, 217, 255, 0.15)',
+                          fontSize: '0.68rem',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                          <span
+                            style={{
+                              fontSize: '0.55rem',
+                              padding: '1px 5px',
+                              background:
+                                bounty.difficulty === 'HARD'
+                                  ? 'rgba(255, 0, 85, 0.2)'
+                                  : bounty.difficulty === 'MEDIUM'
+                                  ? 'rgba(255, 184, 0, 0.2)'
+                                  : 'rgba(57, 255, 20, 0.2)',
+                              color:
+                                bounty.difficulty === 'HARD'
+                                  ? '#FF0055'
+                                  : bounty.difficulty === 'MEDIUM'
+                                  ? '#FFB800'
+                                  : '#39FF14',
+                              border:
+                                bounty.difficulty === 'HARD'
+                                  ? '1px solid rgba(255, 0, 85, 0.4)'
+                                  : bounty.difficulty === 'MEDIUM'
+                                  ? '1px solid rgba(255, 184, 0, 0.4)'
+                                  : '1px solid rgba(57, 255, 20, 0.4)',
+                              fontWeight: 700,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {bounty.difficulty}
+                          </span>
+                          <span
+                            style={{
+                              color: '#EAF8FF',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                            title={bounty.title}
+                          >
+                            {bounty.title}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            color: '#39FF14',
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-arcade)',
+                            fontSize: '0.65rem',
+                            marginLeft: '12px',
+                            flexShrink: 0,
+                          }}
+                        >
+                          +{bounty.bountyPointsEarned} PTS
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      padding: '24px',
+                      textAlign: 'center',
+                      background: 'rgba(5, 11, 24, 0.6)',
+                      border: '1px dashed rgba(0, 217, 255, 0.2)',
+                      fontSize: '0.65rem',
+                      color: '#8199B5',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    NO BOUNTIES CLEARED YET • SELECT A CHALLENGE TO COMMENCE SOLVING
+                  </div>
+                )}
+              </div>
+            </div>
           </ErrorBoundary>
         )}
 
@@ -1385,10 +1694,7 @@ function App() {
         <HintModal open={hintOpen} onClose={() => setHintOpen(false)} />
         <SurrenderModal open={surrenderOpen} onClose={() => setSurrenderOpen(false)} />
         <PlayerProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
-        <LeaderboardModal
-          open={leaderboardModalOpen}
-          onClose={() => setLeaderboardModalOpen(false)}
-        />
+        
         <BountySynthesisLabModal
           open={synthesisLabOpen}
           onClose={() => setSynthesisLabOpen(false)}
