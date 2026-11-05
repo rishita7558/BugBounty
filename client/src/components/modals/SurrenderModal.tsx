@@ -6,6 +6,8 @@
 
 import { useGameStore } from '@/store/useGameStore';
 import { Flag, AlertTriangle } from 'lucide-react';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
+import { useEffect } from 'react';
 
 /**
  * Properties accepted by the SurrenderModal component.
@@ -26,6 +28,18 @@ export interface SurrenderModalProps {
 export function SurrenderModal({ open, onClose }: SurrenderModalProps) {
   const surrender = useGameStore((s) => s.surrender);
   const challenge = useGameStore((s) => s.challenge);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
 
   if (!open || !challenge) return null;
 
@@ -60,9 +74,13 @@ export function SurrenderModal({ open, onClose }: SurrenderModalProps) {
           border: '1px solid rgba(255, 59, 105, 0.45)',
           boxShadow: '0 20px 50px rgba(5, 11, 24, 0.9), 0 0 30px rgba(255, 59, 105, 0.2)',
           textAlign: 'center',
+          position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+          <PixelCloseButton onClick={onClose} title="Cancel (Esc)" />
+        </div>
         <div
           style={{
             display: 'inline-flex',

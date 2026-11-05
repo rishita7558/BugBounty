@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { RotateCcw, AlertOctagon, ChevronRight } from 'lucide-react';
 import { resetPlayerStreak } from '@/lib/db';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
 
 /**
  * Properties accepted by the DefeatModal component.
@@ -34,6 +35,18 @@ export function DefeatModal({ onNextChallenge }: DefeatModalProps) {
       resetPlayerStreak().catch((err) => console.error('Failed to reset streak in Dexie:', err));
     }
   }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'defeat') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        resetGame();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, resetGame]);
 
   if (phase !== 'defeat' || !challenge) return null;
 
@@ -70,8 +83,12 @@ export function DefeatModal({ onNextChallenge }: DefeatModalProps) {
           background: 'rgba(8, 20, 38, 0.95)',
           border: '1px solid rgba(255, 59, 105, 0.5)',
           boxShadow: '0 24px 60px rgba(5, 11, 24, 0.9), 0 0 35px rgba(255, 59, 105, 0.25)',
+          position: 'relative',
         }}
       >
+        <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+          <PixelCloseButton onClick={resetGame} title="Return to Lobby (Esc)" />
+        </div>
         <div
           style={{
             display: 'inline-flex',

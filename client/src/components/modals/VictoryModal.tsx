@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Home,
 } from 'lucide-react';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
 
 /**
  * Properties accepted by the VictoryModal component.
@@ -193,27 +194,10 @@ export function VictoryModal({ onNextChallenge }: VictoryModalProps) {
               REMEDIATION PROTOCOL: SUCCESS
             </div>
 
-            <button
+            <PixelCloseButton
               onClick={handleHome}
-              style={{
-                background: '#0a1128',
-                color: '#00f0ff',
-                border: '2px solid #00f0ff',
-                boxShadow: '2px 2px 0px #003366',
-                borderRadius: '0px',
-                padding: '4px 10px',
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                fontFamily: 'var(--font-arcade, monospace)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
               title="Return to Homepage (Esc)"
-            >
-              <Home size={12} /> [ESC / HOME]
-            </button>
+            />
           </div>
 
           {/* Title banner */}

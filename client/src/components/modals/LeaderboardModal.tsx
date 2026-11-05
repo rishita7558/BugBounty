@@ -16,9 +16,9 @@ import {
 } from '@/services/leaderboardService';
 import { useAudioSFX } from '@/hooks/useAudioSFX';
 import { formatScore } from '@/lib/utils';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
 import {
   Trophy,
-  X,
   RefreshCw,
   Globe,
   Database,
@@ -173,22 +173,13 @@ export function LeaderboardModal({ open, onClose }: LeaderboardModalProps) {
               SYNC
             </button>
 
-            <button
+            <PixelCloseButton
               onClick={() => {
                 play('click');
                 onClose();
               }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#8199B5',
-                cursor: 'pointer',
-                padding: '4px',
-              }}
-              aria-label="Close modal"
-            >
-              <X size={20} />
-            </button>
+              title="Close (Esc)"
+            />
           </div>
         </div>
 

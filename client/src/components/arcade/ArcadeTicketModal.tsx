@@ -13,6 +13,7 @@ import {
   type BountyTicketData,
 } from '@/lib/ticketGenerator';
 import { Printer, Download, Image as ImageIcon, Check, Award } from 'lucide-react';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
 
 /**
  * Properties accepted by the ArcadeTicketModal component.
@@ -36,7 +37,6 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
   const ticketRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [isExitHovered, setIsExitHovered] = useState(false);
 
   const handleExit = useCallback(() => {
     onClose();
@@ -126,28 +126,10 @@ export function ArcadeTicketModal({ open, onClose, data }: ArcadeTicketModalProp
               OFFICIAL BOUNTY VOUCHER
             </span>
           </div>
-          <button
+          <PixelCloseButton
             onClick={handleExit}
-            onMouseEnter={() => setIsExitHovered(true)}
-            onMouseLeave={() => setIsExitHovered(false)}
-            style={{
-              background: isExitHovered ? '#00f0ff' : '#0a1128',
-              color: isExitHovered ? '#0a1128' : '#00f0ff',
-              border: '2px solid #00f0ff',
-              boxShadow: '2px 2px 0px #003366',
-              borderRadius: '0px',
-              padding: '6px 14px',
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-arcade, monospace)',
-              letterSpacing: '1px',
-              transition: 'none',
-            }}
             title="Exit back to lobby (Esc)"
-          >
-            [ESC / EXIT]
-          </button>
+          />
         </div>
 
         {/* Printable Ticket Area */}

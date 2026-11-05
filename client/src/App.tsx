@@ -22,12 +22,14 @@ import { HintModal } from '@/components/modals/HintModal';
 import { SurrenderModal } from '@/components/modals/SurrenderModal';
 import { EvaluationFailureModal } from '@/components/modals/EvaluationFailureModal';
 import { PlayerProfileModal } from '@/components/modals/PlayerProfileModal';
-import { TopicSelectorModal } from '@/components/modals/TopicSelectorModal';
 import { LeaderboardModal } from '@/components/modals/LeaderboardModal';
-import { ChallengeConfigModal } from '@/components/lobby/ChallengeConfigModal';
-import type { ChallengeConfigSelection } from '@/config/taxonomy';
+import {
+  BountySynthesisLabModal,
+  type MatrixMode,
+  type ClearanceDifficulty,
+} from '@/components/modals/BountySynthesisLabModal';
 import { useScoreStore } from '@/store/useScoreStore';
-import { getLanguageMeta, getTopicById } from '@/core/taxonomy/challengeTaxonomy';
+import { getLanguageMeta, getTopicById, type SupportedLanguage } from '@/core/taxonomy/challengeTaxonomy';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { toAppError } from '@/core/errors/AppErrors';
 import { decodeChallengeFromUrl } from '@/lib/lzShare';
@@ -121,9 +123,8 @@ function App() {
   const [hintOpen, setHintOpen] = useState(false);
   const [surrenderOpen, setSurrenderOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [topicModalOpen, setTopicModalOpen] = useState(false);
+  const [synthesisLabOpen, setSynthesisLabOpen] = useState(false);
   const [leaderboardModalOpen, setLeaderboardModalOpen] = useState(false);
-  const [challengeConfigModalOpen, setChallengeConfigModalOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -265,19 +266,39 @@ function App() {
   ]);
 
   /**
-   * Synthesizes and initiates a challenge from the dynamic Matrix Config lab.
+   * Saves the chosen language, topic, and difficulty into lobby state without immediately starting.
    */
-  const handleInitiateConfig = useCallback(async (selection: ChallengeConfigSelection) => {
-    setChallengeConfigModalOpen(false);
+  const handleEquipConfig = useCallback((selection: {
+    language: SupportedLanguage;
+    topicId: string;
+    difficulty: ClearanceDifficulty;
+    mode: MatrixMode;
+  }) => {
+    setSelectedLanguage(selection.language);
+    setSelectedTopic(selection.topicId);
+    setDifficulty(selection.difficulty);
+    setSynthesisLabOpen(false);
+    play('click');
+  }, [play, setDifficulty, setSelectedLanguage, setSelectedTopic]);
+
+  /**
+   * Synthesizes and initiates a challenge from the Bounty Synthesis Lab modal.
+   */
+  const handleInitiateConfig = useCallback(async (selection: {
+    language: SupportedLanguage;
+    topicId: string;
+    difficulty: ClearanceDifficulty;
+    mode: MatrixMode;
+  }) => {
+    setSynthesisLabOpen(false);
     setLoading(true);
     setLocalError(null);
     clearActionError();
     play('start');
 
-    const mappedDiff = selection.difficulty === 'NOVICE' ? 'easy' : selection.difficulty === 'VETERAN' ? 'medium' : 'hard';
-    setDifficulty(mappedDiff);
-    setSelectedLanguage(selection.language as any);
-    setSelectedTopic(selection.topic);
+    setDifficulty(selection.difficulty);
+    setSelectedLanguage(selection.language);
+    setSelectedTopic(selection.topicId);
 
     try {
       setPhase('loading');
@@ -286,9 +307,9 @@ function App() {
 
       const ch = await generateChallenge({
         mode: selection.mode,
-        difficulty: mappedDiff,
+        difficulty: selection.difficulty,
         language: selection.language,
-        topic: selection.topic,
+        topic: selection.topicId,
         challengeStyle: selectedStyle,
         excludeIds: combinedExcludeIds,
         recentFingerprints,
@@ -586,14 +607,14 @@ function App() {
 
           {/* Quick Actions & Modals */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            {/* Dynamic Challenge Config / Bounty Synthesis Lab */}
+            {/* Unified Bounty Synthesis Lab / Vulnerability Matrix Trigger */}
             <button
               className="btn-pixel-cyber"
               onClick={() => {
-                setChallengeConfigModalOpen(true);
+                setSynthesisLabOpen(true);
                 play('click');
               }}
-              title="Open Bounty Synthesis Lab (DSA vs Practical, Language, Topic & Difficulty Config)"
+              title="Open Bounty Synthesis Lab (DSA vs Practical, Multi-Language Matrix, Topic & Difficulty Config)"
               style={{
                 border: '2px solid #00f0ff',
                 boxShadow: '2px 2px 0px #003366',
@@ -605,29 +626,22 @@ function App() {
                 fontWeight: 800,
                 padding: '6px 12px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
             >
-              [SYNTHESIS LAB]
-            </button>
-            {/* Topic & Language Taxonomy selector */}
-            <button
-              className="btn-pixel-cyber"
-              onClick={() => {
-                setTopicModalOpen(true);
-                play('click');
-              }}
-              title="Select Language & Bug Vulnerability Topic (JS / TS / Python)"
-            >
-              <Layers size={14} color={getLanguageMeta(selectedLanguage).color} />
-              <span style={{ color: getLanguageMeta(selectedLanguage).color }}>
-                {getLanguageMeta(selectedLanguage).label}
+              <Cpu size={14} color="#00f0ff" />
+              <span>[SYNTHESIS LAB]</span>
+              <span style={{ color: getLanguageMeta(selectedLanguage).color, fontSize: '0.65rem' }}>
+                {getLanguageMeta(selectedLanguage).label.toUpperCase()}
               </span>
               {selectedTopic && (
                 <span
                   style={{
                     fontSize: '0.65rem',
                     color: '#8199B5',
-                    maxWidth: '120px',
+                    maxWidth: '130px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -829,7 +843,7 @@ function App() {
                   {/* Selected Topic Badge */}
                   <div
                     onClick={() => {
-                      setTopicModalOpen(true);
+                      setSynthesisLabOpen(true);
                       play('click');
                     }}
                     style={{
@@ -841,7 +855,7 @@ function App() {
                       alignItems: 'center',
                       gap: '12px',
                     }}
-                    title="Click to customize language and vulnerability taxonomy"
+                    title="Click to open Bounty Synthesis Lab & customize stack, vulnerability taxonomy, and difficulty"
                   >
                     <Layers size={20} color={getLanguageMeta(selectedLanguage).color} />
                     <div style={{ flex: 1 }}>
@@ -1013,40 +1027,6 @@ function App() {
               >
                 {/* 3D Holographic Canvas */}
                 <IceCrystalCanvas />
-
-                {/* HUD Coordinate Overlays */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '12px',
-                    left: '14px',
-                    fontSize: '0.6rem',
-                    fontFamily: 'var(--font-mono)',
-                    color: '#8199B5',
-                    pointerEvents: 'none',
-                    lineHeight: 1.4,
-                  }}
-                >
-                  <div>OBJECT: ICE_PRISM_3D</div>
-                  <div>FACETS: 16 • VERTICES: 12</div>
-                  <div style={{ color: '#00D9FF' }}>INTERACTION: CURSOR REACTIVE</div>
-                </div>
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: '12px',
-                    right: '14px',
-                    fontSize: '0.6rem',
-                    fontFamily: 'var(--font-mono)',
-                    color: '#8199B5',
-                    textAlign: 'right',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <div>QUANTUM REFRACTION: 1.42</div>
-                  <div style={{ color: '#65CFFF' }}>ROTATION ENGINE: 60 FPS LOCKED</div>
-                </div>
 
                 {/* Loading progress bar overlay */}
                 {phase === 'loading' && (
@@ -1432,24 +1412,18 @@ function App() {
         <HintModal open={hintOpen} onClose={() => setHintOpen(false)} />
         <SurrenderModal open={surrenderOpen} onClose={() => setSurrenderOpen(false)} />
         <PlayerProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
-        <TopicSelectorModal
-          open={topicModalOpen}
-          activeTopicId={selectedTopic}
-          activeLanguage={selectedLanguage}
-          onSelectTopic={(topic) => {
-            setSelectedTopic(topic.id);
-            setSelectedLanguage(topic.language);
-          }}
-          onClose={() => setTopicModalOpen(false)}
-        />
         <LeaderboardModal
           open={leaderboardModalOpen}
           onClose={() => setLeaderboardModalOpen(false)}
         />
-        <ChallengeConfigModal
-          open={challengeConfigModalOpen}
-          onClose={() => setChallengeConfigModalOpen(false)}
-          onInitiate={handleInitiateConfig}
+        <BountySynthesisLabModal
+          open={synthesisLabOpen}
+          onClose={() => setSynthesisLabOpen(false)}
+          initialLanguage={selectedLanguage}
+          initialTopicId={selectedTopic}
+          initialDifficulty={difficulty}
+          onEquip={handleEquipConfig}
+          onInitiateSynthesis={handleInitiateConfig}
           isLoading={loading}
         />
       </ErrorBoundary>

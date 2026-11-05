@@ -7,6 +7,8 @@
 
 import { useGameStore } from '@/store/useGameStore';
 import { AlertOctagon, RefreshCw, Flag, ChevronRight, AlertTriangle } from 'lucide-react';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
+import { useEffect } from 'react';
 
 export interface EvaluationFailureModalProps {
   open: boolean;
@@ -23,6 +25,18 @@ export function EvaluationFailureModal({
 }: EvaluationFailureModalProps) {
   const review = useGameStore((s) => s.review);
   const challenge = useGameStore((s) => s.challenge);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
 
   if (!open || !review || review.correct) return null;
 
@@ -55,9 +69,13 @@ export function EvaluationFailureModal({
           boxShadow: '0 24px 60px rgba(5, 11, 24, 0.9), 0 0 35px rgba(255, 59, 105, 0.25)',
           maxHeight: '90vh',
           overflowY: 'auto',
+        position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+          <PixelCloseButton onClick={onClose} title="Dismiss (Esc)" />
+        </div>
         {/* Alert Icon */}
         <div
           style={{

@@ -1,7 +1,7 @@
 /**
  * @file BountyTicketCard.tsx
  * @description Standalone Bounty Ticket Card component with retro pixel styling and close control.
- * Features prominent [ESC / EXIT] / < BACK TO LOBBY button and global Escape key listener.
+ * Features prominent pixel close button and global Escape key listener.
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react';
@@ -12,6 +12,7 @@ import {
   type BountyTicketData,
 } from '@/lib/ticketGenerator';
 import { Printer, Download, Image as ImageIcon, Award, Check } from 'lucide-react';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
 
 export interface BountyTicketCardProps {
   /** Structured ticket payload. */
@@ -30,7 +31,6 @@ export function BountyTicketCard({
   const ticketRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
 
   const handleExit = useCallback(() => {
     if (onClose) {
@@ -104,7 +104,7 @@ export function BountyTicketCard({
         position: 'relative',
       }}
     >
-      {/* Header bar with prominent [ESC / EXIT] retro pixel button */}
+      {/* Header bar with pixel close button */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Award size={20} color="#00f0ff" />
@@ -122,29 +122,10 @@ export function BountyTicketCard({
         </div>
 
         {/* Retro Pixel Close/Escape Button */}
-        <button
+        <PixelCloseButton
           onClick={handleExit}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          style={{
-            border: '2px solid #00f0ff',
-            boxShadow: isHovered ? 'none' : '2px 2px 0px #003366',
-            borderRadius: '0px',
-            background: isHovered ? '#00f0ff' : '#0a1128',
-            color: isHovered ? '#0a1128' : '#00f0ff',
-            padding: '6px 14px',
-            fontSize: '0.75rem',
-            fontWeight: 800,
-            fontFamily: 'var(--font-arcade, monospace)',
-            cursor: 'pointer',
-            transition: 'background 0.15s ease, color 0.15s ease',
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-          }}
-          title="Press Escape or click to exit to lobby"
-        >
-          [ESC / EXIT]
-        </button>
+          title="Exit back to lobby (Esc)"
+        />
       </div>
 
       {/* Printable Ticket Area */}

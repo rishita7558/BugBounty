@@ -14,9 +14,10 @@ import {
   type SolvedChallenge,
 } from '@/lib/db';
 import { StreakEngine } from '@/services/StreakEngine';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
 import { ArcadeTicketModal } from '@/components/arcade/ArcadeTicketModal';
 import { type BountyTicketData } from '@/lib/ticketGenerator';
-import { User, Award, Trophy, Ticket, X, Clock, ShieldCheck } from 'lucide-react';
+import { User, Award, Trophy, Ticket, Clock, ShieldCheck } from 'lucide-react';
 
 /**
  * Properties accepted by the PlayerProfileModal component.
@@ -124,18 +125,10 @@ export function PlayerProfileModal({ open, onClose }: PlayerProfileModalProps) {
                 HACKER IDENTITY & PERSISTENCE
               </h2>
             </div>
-            <button
+            <PixelCloseButton
               onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#8199B5',
-                cursor: 'pointer',
-                padding: '4px',
-              }}
-            >
-              <X size={20} />
-            </button>
+              title="Close (Esc)"
+            />
           </div>
 
           {/* Callsign Editor & Overview */}

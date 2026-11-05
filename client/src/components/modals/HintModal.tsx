@@ -8,7 +8,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { getHint } from '@/services/api';
-import { Lightbulb, AlertTriangle, History, X, Pause } from 'lucide-react';
+import { Lightbulb, AlertTriangle, History, Pause } from 'lucide-react';
+import { PixelCloseButton } from '@/components/common/PixelCloseButton';
 
 /**
  * Properties accepted by the HintModal component.
@@ -181,19 +182,10 @@ export function HintModal({ open, onClose }: HintModalProps) {
               HINT PROTOCOL — {hintsUsed}/{maxHints} USED
             </span>
           </div>
-          <button
+          <PixelCloseButton
             onClick={handleClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#8199B5',
-              cursor: 'pointer',
-              display: 'flex',
-              padding: '4px',
-            }}
-          >
-            <X size={18} />
-          </button>
+            title="Close hint protocol (Esc)"
+          />
         </div>
 
         {/* Cryo-Timer Pause Notice */}
