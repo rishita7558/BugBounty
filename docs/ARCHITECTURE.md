@@ -191,7 +191,7 @@ The Node.js Express server (`server/src`) is designed with zero business logic, 
 ```
 
 ### 4.3 Generative Challenge Service & Fallback Strategy (`llm.service.ts`)
-- **Multi-Provider Adapter:** Supports Google Gemini (`gemini-2.5-flash`) and OpenAI (`gpt-4o-mini`) using standardized system instructions and JSON response constraints.
+- **Multi-Provider Adapter:** Supports Google Gemini/Gemma (`gemini-3.6-flash`, `gemini-3.1-flash-lite`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemma-4`) and OpenAI (`gpt-4o-mini`) using standardized system instructions and JSON response constraints.
 - **Parsing Resilience:** Sanitizes markdown code fences (````json ... ````) and applies fallback regular expression extractors when direct JSON parsing encounters trailing delimiters.
 - **Curated Offline Fallbacks:** If external API keys are missing, exhausted, or offline, the service provides curated debugging challenges across Easy, Medium, and Hard tiers, ensuring full offline functionality.
 

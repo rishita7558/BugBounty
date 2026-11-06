@@ -30,12 +30,12 @@ flowchart TD
     subgraph Server["Minimal Node.js / Express Proxy"]
         ValController["Schema & Body Validation Controller"]
         VMJudge["Isolated node:vm Test Runner & Evaluator"]
-        LLMGen["Resilient Multi-Model LLM Generator\n- gemini-2.5-flash\n- gemini-1.5-flash\n- gemini-1.5-pro\n- gemini-flash-latest"]
+        LLMGen["Resilient Multi-Model LLM Generator\n- gemini-3.6-flash\n- gemini-3.1-flash-lite\n- gemini-2.5-flash\n- gemini-2.5-flash-lite\n- gemma-4"]
         CuratedCatalog[("Deterministic Offline Seed Pool\n(curatedChallenges.ts)")]
     end
 
     subgraph CloudAI["Google Generative AI / OpenAI API"]
-        GeminiAPI["Gemini 2.5 Flash / 1.5 Flash Endpoints"]
+        GeminiAPI["Gemini / Gemma Endpoints"]
     end
 
     UI -->|"User edits code & submits fix [Ctrl+Enter]"| Worker
@@ -71,7 +71,7 @@ flowchart TD
 - **Dual-Score Synchronization**: `sessionScore` is isolated to the active tab via `sessionStorage`, while `lifetimeScore` hydrates synchronously from local cache into Zustand state without flashing blank/zero states on hard reload.
 
 ### 2. Resilient Multi-Model LLM Cascade & Offline Fallback Pool
-- **Stable Cascade Matrix**: Sequentially cascades across `["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-flash-latest"]`.
+- **Stable Cascade Matrix**: Sequentially cascades across `["gemini-3.6-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemma-4"]`.
 - **Exponential Backoff with Jitter**: Up to 2 retries per model candidate with randomized jitter delays (`500ms * 2^attempt + jitter`).
 - **5-Second Timeout Protection**: Calls to upstream LLMs are constrained by a strict 5,000ms threshold (`Promise.race`).
 - **Deterministic Offline Seed Pool (`server/src/fixtures/curatedChallenges.ts`)**: If all cloud endpoints fail, timeout, or experience 503 traffic surges, the server automatically serves vetted deterministic challenge seeds tagged `{ source: "curated_fallback" }` with zero 500 crashes.
@@ -120,7 +120,7 @@ Create `server/.env` with your API credentials (optional — offline fallback po
 PORT=3001
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4173
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.6-flash
 ```
 
 ### Running Locally

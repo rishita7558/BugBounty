@@ -2,8 +2,8 @@
  * @file llmQuestionGenerator.ts
  * @description Advanced LLM Question Generation Pipeline for BugBounty Arena.
  * Implements exponential backoff with jitter (initial delay 500ms, max 2 retries per model),
- * multi-model cascade across stable model identifiers ["gemini-2.5-flash", "gemini-1.5-flash",
- * "gemini-1.5-pro", "gemini-flash-latest"], 5-second timeout thresholds, and a deterministic
+ * multi-model cascade across stable model identifiers ["gemini-3.6-flash", "gemini-3.1-flash-lite",
+ * "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemma-4"], 5-second timeout thresholds, and a deterministic
  * offline emergency fallback pool ({ source: "curated_fallback" }) ensuring zero 500/503 runtime crashes.
  */
 
@@ -57,10 +57,11 @@ const GEMINI_MODELS = Array.from(
   new Set(
     [
       process.env.GEMINI_MODEL,
+      'gemini-3.6-flash',
+      'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-      'gemini-flash-latest',
+      'gemini-2.5-flash-lite',
+      'gemma-4',
     ].filter(Boolean) as string[]
   )
 );
